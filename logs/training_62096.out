@@ -1,0 +1,23 @@
+--- Starting Slurm Job: SelectiveMagnoViT_Train (ID: 62096) ---
+Running on host: mind-1-19
+Allocated GPUs: 0
+Job started at: Thu Aug  7 07:49:13 EDT 2025
+Loading modules...
+ERROR: Unable to locate a modulefile for 'anaconda3'
+ERROR: Unable to locate a modulefile for 'cuda'
+Activating Conda environment: drawings
+Python executable: /home/horaja/.conda/envs/drawings/bin/python
+----------------------------------------
+--- Running dataset verification script... ---
+Found 9469 images in 'train' split.
+Found 10 classes.
+
+Successfully created dataset with 9469 samples.
+Sample 0 shapes:
+  - Magno Image: torch.Size([3, 256, 256])
+  - Line Drawing: torch.Size([1, 256, 256])
+  - Label: 0 (Class: n01440764)
+--- Dataset verification finished. ---
+----------------------------------------
+Job finished at: Thu Aug  7 07:49:19 EDT 2025
+--- Slurm Job Finished ---
