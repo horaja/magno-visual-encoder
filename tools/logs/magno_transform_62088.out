@@ -1,0 +1,15 @@
+--- Starting Slurm Job: Magno_Transform (ID: 62088) ---
+Running on host: mind-1-15
+Allocated GPUs: 
+Job started at: Thu Aug  7 06:52:46 EDT 2025
+Loading modules...
+ERROR: Unable to locate a modulefile for 'anaconda3'
+ERROR: Unable to locate a modulefile for 'cuda'
+Activating Conda environment: drawings
+Python executable: /home/horaja/.conda/envs/drawings/bin/python
+Starting Magno Transform...
+Output will be saved to: /user_data/horaja/workspace/dual-stream-vlm/encoder/data/preprocessed/magno_images/
+Error: No images found in /user_data/horaja/workspace/dual-stream-vlm/encoder/data/raw_dataset/
+--- Python script completed ---
+Job finished at: Thu Aug  7 06:53:03 EDT 2025
+--- Slurm Job Finished ---

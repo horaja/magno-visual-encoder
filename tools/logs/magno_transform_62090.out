@@ -1,0 +1,32 @@
+--- Starting Slurm Job: Magno_Transform_All (ID: 62090) ---
+Running on host: mind-1-15
+Allocated GPUs: 
+Job started at: Thu Aug  7 06:59:39 EDT 2025
+Loading modules...
+ERROR: Unable to locate a modulefile for 'anaconda3'
+ERROR: Unable to locate a modulefile for 'cuda'
+Activating Conda environment: drawings
+Python executable: /home/horaja/.conda/envs/drawings/bin/python
+----------------------------------------
+Processing subdirectory: train
+Input from: /user_data/horaja/workspace/dual-stream-vlm/encoder/data/raw_dataset/train/
+Output to: /user_data/horaja/workspace/dual-stream-vlm/encoder/data/preprocessed/magno_images/train/
+----------------------------------------
+Searching for images in: /user_data/horaja/workspace/dual-stream-vlm/encoder/data/raw_dataset/train/
+Found 9469 images to process.
+
+Magno Transform pre-processing complete.
+--- Finished processing train ---
+----------------------------------------
+Processing subdirectory: val
+Input from: /user_data/horaja/workspace/dual-stream-vlm/encoder/data/raw_dataset/val/
+Output to: /user_data/horaja/workspace/dual-stream-vlm/encoder/data/preprocessed/magno_images/val/
+----------------------------------------
+Searching for images in: /user_data/horaja/workspace/dual-stream-vlm/encoder/data/raw_dataset/val/
+Found 3925 images to process.
+
+Magno Transform pre-processing complete.
+--- Finished processing val ---
+--- All Python scripts completed ---
+Job finished at: Thu Aug  7 07:01:17 EDT 2025
+--- Slurm Job Finished ---

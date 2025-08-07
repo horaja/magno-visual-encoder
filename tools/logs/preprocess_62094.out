@@ -1,0 +1,21 @@
+--- Starting Slurm Job: Full Preprocessing Pipeline ---
+ERROR: Unable to locate a modulefile for 'anaconda3'
+ERROR: Unable to locate a modulefile for 'cuda'
+Changed directory to: /user_data/horaja/workspace/dual-stream-vlm/encoder/tools/informative-drawings
+----------------------------------------
+Processing subdirectory: train
+----------------------------------------
+--- Configuration ---
+Namespace(name='opensketch_style', dataroot='/user_data/horaja/workspace/dual-stream-vlm/encoder/data/raw_dataset/train/', magno_output_dir='/user_data/horaja/workspace/dual-stream-vlm/encoder/data/preprocessed/magno_images/train/', line_drawing_output_dir='/user_data/horaja/workspace/dual-stream-vlm/encoder/data/preprocessed/line_drawings/train/', checkpoints_dir='checkpoints', input_nc=3, output_nc=1, size=256, n_blocks=9, which_epoch='latest', cuda=True)
+---------------------
+Loading model from: checkpoints/opensketch_style/netG_A_latest.pth
+----------------------------------------
+Processing subdirectory: val
+----------------------------------------
+--- Configuration ---
+Namespace(name='opensketch_style', dataroot='/user_data/horaja/workspace/dual-stream-vlm/encoder/data/raw_dataset/val/', magno_output_dir='/user_data/horaja/workspace/dual-stream-vlm/encoder/data/preprocessed/magno_images/val/', line_drawing_output_dir='/user_data/horaja/workspace/dual-stream-vlm/encoder/data/preprocessed/line_drawings/val/', checkpoints_dir='checkpoints', input_nc=3, output_nc=1, size=256, n_blocks=9, which_epoch='latest', cuda=True)
+---------------------
+Loading model from: checkpoints/opensketch_style/netG_A_latest.pth
+--- All Python scripts completed ---
+Current directory restored to: /user_data/horaja/workspace/dual-stream-vlm/encoder
+--- Slurm Job Finished ---

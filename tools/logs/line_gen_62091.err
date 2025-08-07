@@ -1,0 +1,18 @@
+/user_data/horaja/workspace/dual-stream-vlm/encoder/tools/informative-drawings/test_magno.py:44: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  net_G.load_state_dict(torch.load(model_path))
+Traceback (most recent call last):
+  File "/user_data/horaja/workspace/dual-stream-vlm/encoder/tools/informative-drawings/test_magno.py", line 44, in <module>
+    net_G.load_state_dict(torch.load(model_path))
+  File "/home/horaja/.conda/envs/drawings/lib/python3.12/site-packages/torch/nn/modules/module.py", line 2215, in load_state_dict
+    raise RuntimeError('Error(s) in loading state_dict for {}:\n\t{}'.format(
+RuntimeError: Error(s) in loading state_dict for Generator:
+	size mismatch for model0.1.weight: copying a param with shape torch.Size([64, 3, 7, 7]) from checkpoint, the shape in current model is torch.Size([64, 1, 7, 7]).
+/user_data/horaja/workspace/dual-stream-vlm/encoder/tools/informative-drawings/test_magno.py:44: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  net_G.load_state_dict(torch.load(model_path))
+Traceback (most recent call last):
+  File "/user_data/horaja/workspace/dual-stream-vlm/encoder/tools/informative-drawings/test_magno.py", line 44, in <module>
+    net_G.load_state_dict(torch.load(model_path))
+  File "/home/horaja/.conda/envs/drawings/lib/python3.12/site-packages/torch/nn/modules/module.py", line 2215, in load_state_dict
+    raise RuntimeError('Error(s) in loading state_dict for {}:\n\t{}'.format(
+RuntimeError: Error(s) in loading state_dict for Generator:
+	size mismatch for model0.1.weight: copying a param with shape torch.Size([64, 3, 7, 7]) from checkpoint, the shape in current model is torch.Size([64, 1, 7, 7]).

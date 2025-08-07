@@ -1,0 +1,21 @@
+--- Starting Slurm Job: Magno_LineGen (ID: 62091) ---
+Loading modules...
+ERROR: Unable to locate a modulefile for 'anaconda3'
+ERROR: Unable to locate a modulefile for 'cuda'
+Activating Conda environment: drawings
+Changed directory to: /user_data/horaja/workspace/dual-stream-vlm/encoder/tools/informative-drawings
+----------------------------------------
+Processing subdirectory: train
+Input from: /user_data/horaja/workspace/dual-stream-vlm/encoder/data/preprocessed/magno_images/train/
+Output to: /user_data/horaja/workspace/dual-stream-vlm/encoder/data/preprocessed/line_drawings/train/
+----------------------------------------
+Namespace(name='opensketch_style', checkpoints_dir='checkpoints', results_dir='/user_data/horaja/workspace/dual-stream-vlm/encoder/data/preprocessed/line_drawings/train/', dataroot='/user_data/horaja/workspace/dual-stream-vlm/encoder/data/preprocessed/magno_images/train/', input_nc=1, output_nc=1, size=256, n_blocks=3, cuda=True, which_epoch='latest', how_many=10000)
+----------------------------------------
+Processing subdirectory: val
+Input from: /user_data/horaja/workspace/dual-stream-vlm/encoder/data/preprocessed/magno_images/val/
+Output to: /user_data/horaja/workspace/dual-stream-vlm/encoder/data/preprocessed/line_drawings/val/
+----------------------------------------
+Namespace(name='opensketch_style', checkpoints_dir='checkpoints', results_dir='/user_data/horaja/workspace/dual-stream-vlm/encoder/data/preprocessed/line_drawings/val/', dataroot='/user_data/horaja/workspace/dual-stream-vlm/encoder/data/preprocessed/magno_images/val/', input_nc=1, output_nc=1, size=256, n_blocks=3, cuda=True, which_epoch='latest', how_many=10000)
+--- All Python scripts completed ---
+Current directory restored to: /user_data/horaja/workspace/dual-stream-vlm/encoder
+--- Slurm Job Finished ---

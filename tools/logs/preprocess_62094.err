@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/user_data/horaja/workspace/dual-stream-vlm/encoder/tools/informative-drawings/test_magno.py", line 52, in <module>
+    net_G.load_state_dict(torch.load(model_path, weights_only=True))
+  File "/home/horaja/.conda/envs/drawings/lib/python3.12/site-packages/torch/nn/modules/module.py", line 2215, in load_state_dict
+    raise RuntimeError('Error(s) in loading state_dict for {}:\n\t{}'.format(
+RuntimeError: Error(s) in loading state_dict for Generator:
+	Missing key(s) in state_dict: "model2.3.conv_block.1.weight", "model2.3.conv_block.1.bias", "model2.3.conv_block.5.weight", "model2.3.conv_block.5.bias", "model2.4.conv_block.1.weight", "model2.4.conv_block.1.bias", "model2.4.conv_block.5.weight", "model2.4.conv_block.5.bias", "model2.5.conv_block.1.weight", "model2.5.conv_block.1.bias", "model2.5.conv_block.5.weight", "model2.5.conv_block.5.bias", "model2.6.conv_block.1.weight", "model2.6.conv_block.1.bias", "model2.6.conv_block.5.weight", "model2.6.conv_block.5.bias", "model2.7.conv_block.1.weight", "model2.7.conv_block.1.bias", "model2.7.conv_block.5.weight", "model2.7.conv_block.5.bias", "model2.8.conv_block.1.weight", "model2.8.conv_block.1.bias", "model2.8.conv_block.5.weight", "model2.8.conv_block.5.bias". 
+Traceback (most recent call last):
+  File "/user_data/horaja/workspace/dual-stream-vlm/encoder/tools/informative-drawings/test_magno.py", line 52, in <module>
+    net_G.load_state_dict(torch.load(model_path, weights_only=True))
+  File "/home/horaja/.conda/envs/drawings/lib/python3.12/site-packages/torch/nn/modules/module.py", line 2215, in load_state_dict
+    raise RuntimeError('Error(s) in loading state_dict for {}:\n\t{}'.format(
+RuntimeError: Error(s) in loading state_dict for Generator:
+	Missing key(s) in state_dict: "model2.3.conv_block.1.weight", "model2.3.conv_block.1.bias", "model2.3.conv_block.5.weight", "model2.3.conv_block.5.bias", "model2.4.conv_block.1.weight", "model2.4.conv_block.1.bias", "model2.4.conv_block.5.weight", "model2.4.conv_block.5.bias", "model2.5.conv_block.1.weight", "model2.5.conv_block.1.bias", "model2.5.conv_block.5.weight", "model2.5.conv_block.5.bias", "model2.6.conv_block.1.weight", "model2.6.conv_block.1.bias", "model2.6.conv_block.5.weight", "model2.6.conv_block.5.bias", "model2.7.conv_block.1.weight", "model2.7.conv_block.1.bias", "model2.7.conv_block.5.weight", "model2.7.conv_block.5.bias", "model2.8.conv_block.1.weight", "model2.8.conv_block.1.bias", "model2.8.conv_block.5.weight", "model2.8.conv_block.5.bias". 
