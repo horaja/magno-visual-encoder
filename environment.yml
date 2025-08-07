@@ -2,6 +2,7 @@ name: drawings
 channels:
   - pytorch
   - defaults
+  - conda-forge
 dependencies:
   - python
   - pytorch
@@ -13,7 +14,10 @@ dependencies:
   - tensorboard
   - pillow
   - opencv
-  - scikit-learn 
+  - scikit-learn
+  - timm
+  - fvcore
+  - matplotlib
   - pip:
      - oyaml
      - dominate
@@ -21,6 +25,3 @@ dependencies:
      - ftfy
      - tqdm
      - regex
-     - timm
-     - fvcore
-     - matplotlib

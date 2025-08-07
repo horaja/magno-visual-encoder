@@ -30,6 +30,7 @@ echo "Job started at: $(date)"
 PROJECT_ROOT=$(pwd)
 CONDA_ENV_NAME="drawings"
 TRAIN_SCRIPT_PATH="src/train.py"
+MODEL_TEST_SCRIPT_PATH="src/model.py"
 DATASET_TEST_SCRIPT_PATH="src/dataset.py" # For current testing
 
 # --- Create Log Directory ---
@@ -47,16 +48,25 @@ echo "----------------------------------------"
 
 # --- SCRIPT EXECUTION ---
 
-# --- Step 1: Test the dataset.py script (CURRENTLY ACTIVE) ---
-# This runs the verification block at the end of your dataset script.
-# It's a good sanity check to ensure data paths and loading are correct.
-echo "--- Running dataset verification script... ---"
-python ${DATASET_TEST_SCRIPT_PATH}
-echo "--- Dataset verification finished. ---"
+# --- Step 1: Test the dataset.py script (COMMENTED OUT) ---
+# This step has already been validated.
+#
+# echo "--- Running dataset verification script... ---"
+# python ${DATASET_TEST_SCRIPT_PATH}
+# echo "--- Dataset verification finished. ---"
+# echo "----------------------------------------"
+
+
+# --- Step 2: Test the model.py script (CURRENTLY ACTIVE) ---
+# This runs the verification block at the end of your model script to
+# ensure the architecture is correct and a forward pass is successful.
+echo "--- Running model verification script... ---"
+python ${MODEL_TEST_SCRIPT_PATH}
+echo "--- Model verification finished. ---"
 echo "----------------------------------------"
 
 
-# --- Step 2: Full Training Run (COMMENTED OUT FOR NOW) ---
+# --- Step 3: Full Training Run (COMMENTED OUT FOR NOW) ---
 # Once you are ready to train, you will comment out the verification
 # step above and uncomment the block below.
 #
