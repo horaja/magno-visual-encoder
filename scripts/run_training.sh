@@ -26,12 +26,9 @@ echo "Allocated GPUs: $CUDA_VISIBLE_DEVICES"
 echo "Job started at: $(date)"
 
 # --- Configuration & Hyperparameters ---
-# This section will grow as you add more training options.
 PROJECT_ROOT=$(pwd)
 CONDA_ENV_NAME="drawings"
 TRAIN_SCRIPT_PATH="src/train.py"
-MODEL_TEST_SCRIPT_PATH="src/model.py"
-DATASET_TEST_SCRIPT_PATH="src/dataset.py" # For current testing
 
 # --- Create Log Directory ---
 mkdir -p logs
@@ -48,38 +45,28 @@ echo "----------------------------------------"
 
 # --- SCRIPT EXECUTION ---
 
-# --- Step 1: Test the dataset.py script (COMMENTED OUT) ---
-# This step has already been validated.
+# --- Step 1 & 2: Verification (COMMENTED OUT) ---
+# These steps have been successfully validated.
 #
-# echo "--- Running dataset verification script... ---"
-# python ${DATASET_TEST_SCRIPT_PATH}
-# echo "--- Dataset verification finished. ---"
+# echo "--- Running model verification script... ---"
+# python src/model.py
+# echo "--- Model verification finished. ---"
 # echo "----------------------------------------"
 
 
-# --- Step 2: Test the model.py script (CURRENTLY ACTIVE) ---
-# This runs the verification block at the end of your model script to
-# ensure the architecture is correct and a forward pass is successful.
-echo "--- Running model verification script... ---"
-python ${MODEL_TEST_SCRIPT_PATH}
-echo "--- Model verification finished. ---"
-echo "----------------------------------------"
-
-
-# --- Step 3: Full Training Run (COMMENTED OUT FOR NOW) ---
-# Once you are ready to train, you will comment out the verification
-# step above and uncomment the block below.
-#
-# echo "--- Starting full training run... ---"
-# python ${TRAIN_SCRIPT_PATH} \
-#   --magno_dir "data/preprocessed/magno_images" \
-#   --lines_dir "data/preprocessed/line_drawings" \
-#   --output_dir "models/checkpoints" \
-#   --epochs 50 \
-#   --batch_size 32 \
-#   --learning_rate 1e-4 \
-#   --patch_percentage 0.25 # Example: Use top 25% of patches
-# echo "--- Training script finished. ---"
+# --- Step 3: Full Training Run (ACTIVE) ---
+# This block is now active to run the full training and validation pipeline.
+echo "--- Starting full training run... ---"
+python ${TRAIN_SCRIPT_PATH} \
+  --magno_dir "data/preprocessed/magno_images" \
+  --lines_dir "data/preprocessed/line_drawings" \
+  --output_dir "models/checkpoints" \
+  --epochs 50 \
+  --batch_size 32 \
+  --learning_rate 1e-4 \
+  --patch_percentage 0.25 \
+  --num_workers 4
+echo "--- Training script finished. ---"
 
 
 # --- Cleanup ---

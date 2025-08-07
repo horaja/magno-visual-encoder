@@ -1,0 +1,8 @@
+*.pyc
+/*.pyc
+*.pth
+__pycache__/
+
+data/
+
+checkpoints/

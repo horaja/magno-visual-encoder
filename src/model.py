@@ -100,7 +100,7 @@ class SelectiveMagnoViT(nn.Module):
     """
     The complete SelectiveMagnoViT model.
     """
-    def __init__(self, patch_percentage=0.25, num_classes=10, vit_model_name='vit_base_patch16_224_in21k'):
+    def __init__(self, patch_percentage=0.25, num_classes=10, img_size=224, vit_model_name='vit_base_patch16_224_in21k'):
         """
         Args:
             patch_percentage (float): The percentage of patches to select.
@@ -110,7 +110,7 @@ class SelectiveMagnoViT(nn.Module):
         super().__init__()
         
         # --- Load the ViT Backbone (Module 5) ---
-        self.vit = timm.create_model(vit_model_name, pretrained=True)
+        self.vit = timm.create_model(vit_model_name, pretrained=True, img_size=img_size)
         self.patch_size = self.vit.patch_embed.patch_size[0]
         
         # --- Instantiate Our Custom Modules ---
