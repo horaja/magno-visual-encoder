@@ -1,0 +1,12 @@
+--- Starting Slurm Job: SelectiveMagnoViT_Train (ID: 62109) ---
+Running on host: mind-1-15
+Allocated GPUs: 0
+Job started at: Thu Aug  7 10:39:20 EDT 2025
+Loading modules...
+Activating Conda environment: drawings
+Python executable: /home/horaja/.conda/envs/drawings/bin/python
+----------------------------------------
+--- Starting model evaluation... ---
+--- Testing script finished. ---
+Job finished at: Thu Aug  7 10:39:26 EDT 2025
+--- Slurm Job Finished ---

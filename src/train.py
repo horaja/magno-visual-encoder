@@ -29,7 +29,16 @@ def main(args):
     # --- 2. Data Loading ---
     # Define transformations for the ViT input (Magno images)
     # These should match the standard transformations for ViT models
-    vit_transform = transforms.Compose([
+    train_transform = transforms.Compose([
+        transforms.RandomResizedCrop(args.img_size, scale=(0.8, 1.0)), # Randomly zoom and crop
+        transforms.RandomHorizontalFlip(), # Flip images horizontally
+        transforms.ColorJitter(brightness=0.2, contrast=0.2), # Randomly change brightness/contrast
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+    
+    val_transform = transforms.Compose([
+        transforms.Resize((args.img_size, args.img_size)), # Keep validation consistent
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
@@ -40,7 +49,7 @@ def main(args):
         magno_root=args.magno_dir,
         lines_root=args.lines_dir,
         split='train',
-        transform=vit_transform
+        transform=train_transform
     )
     
     print("Loading validation data...")
@@ -48,7 +57,7 @@ def main(args):
         magno_root=args.magno_dir,
         lines_root=args.lines_dir,
         split='val',
-        transform=vit_transform
+        transform=val_transform
     )
 
     # Create DataLoaders
@@ -79,7 +88,7 @@ def main(args):
         img_size=args.img_size
     ).to(device)
 
-    optimizer = AdamW(model.parameters(), lr=args.learning_rate, weight_decay=0.01)
+    optimizer = AdamW(model.parameters(), lr=args.learning_rate, weight_decay=0.03)
     scheduler = StepLR(optimizer, step_size=10, gamma=0.1) # Reduce LR every 10 epochs
     criterion = nn.CrossEntropyLoss() # Standard loss for classification
 

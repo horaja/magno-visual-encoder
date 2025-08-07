@@ -18,10 +18,12 @@ dependencies:
   - timm
   - fvcore
   - matplotlib
+  - seaborn
+  - iopath
+  - tqdm
   - pip:
      - oyaml
      - dominate
      - ninja
      - ftfy
-     - tqdm
      - regex

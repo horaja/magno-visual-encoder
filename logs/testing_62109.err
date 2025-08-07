@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/user_data/horaja/workspace/dual-stream-vlm/encoder/src/test.py", line 10, in <module>
+    from fvcore.nn import FlopCountAnalysis
+  File "/home/horaja/.conda/envs/drawings/lib/python3.12/site-packages/fvcore/nn/__init__.py", line 2, in <module>
+    from .activation_count import activation_count, ActivationCountAnalysis
+  File "/home/horaja/.conda/envs/drawings/lib/python3.12/site-packages/fvcore/nn/activation_count.py", line 10, in <module>
+    from .jit_analysis import JitModelAnalysis
+  File "/home/horaja/.conda/envs/drawings/lib/python3.12/site-packages/fvcore/nn/jit_analysis.py", line 16, in <module>
+    from fvcore.common.checkpoint import _named_modules_with_dup
+  File "/home/horaja/.conda/envs/drawings/lib/python3.12/site-packages/fvcore/common/checkpoint.py", line 12, in <module>
+    from iopath.common.file_io import HTTPURLHandler, PathManager
+ModuleNotFoundError: No module named 'iopath'

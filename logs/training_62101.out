@@ -1,0 +1,84 @@
+--- Starting Slurm Job: SelectiveMagnoViT_Train (ID: 62101) ---
+Running on host: mind-1-15
+Allocated GPUs: 0
+Job started at: Thu Aug  7 09:16:56 EDT 2025
+Loading modules...
+Activating Conda environment: drawings
+Python executable: /home/horaja/.conda/envs/drawings/bin/python
+----------------------------------------
+--- Starting full training run... ---
+Using device: cuda
+Loading training data...
+Found 9469 images in 'train' split.
+Found 10 classes.
+Loading validation data...
+Found 3925 images in 'val' split.
+Found 10 classes.
+Number of classes: 10
+Initializing model...
+--- Starting Training ---
+Epoch 1/50 | Train Loss: 1.3002, Train Acc: 0.5614 | Val Loss: 1.1504, Val Acc: 0.6341 | Duration: 23.21s
+New best model saved to models/checkpoints/best_model_pp0.25.pth with accuracy: 0.6341
+Epoch 2/50 | Train Loss: 0.8111, Train Acc: 0.7336 | Val Loss: 1.2466, Val Acc: 0.5977 | Duration: 21.65s
+Epoch 3/50 | Train Loss: 0.7168, Train Acc: 0.7675 | Val Loss: 1.0549, Val Acc: 0.6522 | Duration: 21.71s
+New best model saved to models/checkpoints/best_model_pp0.25.pth with accuracy: 0.6522
+Epoch 4/50 | Train Loss: 0.6414, Train Acc: 0.7937 | Val Loss: 1.0051, Val Acc: 0.6701 | Duration: 21.98s
+New best model saved to models/checkpoints/best_model_pp0.25.pth with accuracy: 0.6701
+Epoch 5/50 | Train Loss: 0.5951, Train Acc: 0.8027 | Val Loss: 1.0904, Val Acc: 0.6555 | Duration: 21.90s
+Epoch 6/50 | Train Loss: 0.5566, Train Acc: 0.8141 | Val Loss: 1.0506, Val Acc: 0.6454 | Duration: 21.65s
+Epoch 7/50 | Train Loss: 0.5115, Train Acc: 0.8326 | Val Loss: 1.0491, Val Acc: 0.6586 | Duration: 21.65s
+Epoch 8/50 | Train Loss: 0.4787, Train Acc: 0.8380 | Val Loss: 1.0288, Val Acc: 0.6683 | Duration: 21.81s
+Epoch 9/50 | Train Loss: 0.4419, Train Acc: 0.8541 | Val Loss: 1.1219, Val Acc: 0.6634 | Duration: 21.83s
+Epoch 10/50 | Train Loss: 0.4189, Train Acc: 0.8622 | Val Loss: 1.0905, Val Acc: 0.6690 | Duration: 21.83s
+Epoch 11/50 | Train Loss: 0.2346, Train Acc: 0.9224 | Val Loss: 0.9277, Val Acc: 0.7213 | Duration: 21.84s
+New best model saved to models/checkpoints/best_model_pp0.25.pth with accuracy: 0.7213
+Epoch 12/50 | Train Loss: 0.1686, Train Acc: 0.9455 | Val Loss: 0.9319, Val Acc: 0.7340 | Duration: 21.90s
+New best model saved to models/checkpoints/best_model_pp0.25.pth with accuracy: 0.7340
+Epoch 13/50 | Train Loss: 0.1324, Train Acc: 0.9564 | Val Loss: 0.9552, Val Acc: 0.7292 | Duration: 21.79s
+Epoch 14/50 | Train Loss: 0.1138, Train Acc: 0.9623 | Val Loss: 0.9696, Val Acc: 0.7322 | Duration: 21.77s
+Epoch 15/50 | Train Loss: 0.1020, Train Acc: 0.9687 | Val Loss: 1.0098, Val Acc: 0.7368 | Duration: 21.73s
+New best model saved to models/checkpoints/best_model_pp0.25.pth with accuracy: 0.7368
+Epoch 16/50 | Train Loss: 0.0927, Train Acc: 0.9688 | Val Loss: 0.9930, Val Acc: 0.7297 | Duration: 21.76s
+Epoch 17/50 | Train Loss: 0.0891, Train Acc: 0.9695 | Val Loss: 1.0114, Val Acc: 0.7419 | Duration: 22.03s
+New best model saved to models/checkpoints/best_model_pp0.25.pth with accuracy: 0.7419
+Epoch 18/50 | Train Loss: 0.0706, Train Acc: 0.9763 | Val Loss: 1.0807, Val Acc: 0.7355 | Duration: 21.81s
+Epoch 19/50 | Train Loss: 0.0766, Train Acc: 0.9750 | Val Loss: 1.0531, Val Acc: 0.7322 | Duration: 21.95s
+Epoch 20/50 | Train Loss: 0.0665, Train Acc: 0.9791 | Val Loss: 1.1219, Val Acc: 0.7361 | Duration: 21.92s
+Epoch 21/50 | Train Loss: 0.0504, Train Acc: 0.9834 | Val Loss: 1.1002, Val Acc: 0.7376 | Duration: 21.88s
+Epoch 22/50 | Train Loss: 0.0522, Train Acc: 0.9837 | Val Loss: 1.0951, Val Acc: 0.7399 | Duration: 21.79s
+Epoch 23/50 | Train Loss: 0.0532, Train Acc: 0.9823 | Val Loss: 1.0994, Val Acc: 0.7368 | Duration: 22.01s
+Epoch 24/50 | Train Loss: 0.0532, Train Acc: 0.9835 | Val Loss: 1.0970, Val Acc: 0.7401 | Duration: 22.06s
+Epoch 25/50 | Train Loss: 0.0477, Train Acc: 0.9860 | Val Loss: 1.1195, Val Acc: 0.7366 | Duration: 22.00s
+Epoch 26/50 | Train Loss: 0.0441, Train Acc: 0.9860 | Val Loss: 1.1234, Val Acc: 0.7378 | Duration: 21.98s
+Epoch 27/50 | Train Loss: 0.0437, Train Acc: 0.9855 | Val Loss: 1.1393, Val Acc: 0.7419 | Duration: 21.69s
+Epoch 28/50 | Train Loss: 0.0440, Train Acc: 0.9837 | Val Loss: 1.1277, Val Acc: 0.7422 | Duration: 21.75s
+New best model saved to models/checkpoints/best_model_pp0.25.pth with accuracy: 0.7422
+Epoch 29/50 | Train Loss: 0.0408, Train Acc: 0.9864 | Val Loss: 1.1326, Val Acc: 0.7394 | Duration: 21.86s
+Epoch 30/50 | Train Loss: 0.0405, Train Acc: 0.9861 | Val Loss: 1.1351, Val Acc: 0.7439 | Duration: 21.76s
+New best model saved to models/checkpoints/best_model_pp0.25.pth with accuracy: 0.7439
+Epoch 31/50 | Train Loss: 0.0413, Train Acc: 0.9866 | Val Loss: 1.1349, Val Acc: 0.7445 | Duration: 21.72s
+New best model saved to models/checkpoints/best_model_pp0.25.pth with accuracy: 0.7445
+Epoch 32/50 | Train Loss: 0.0393, Train Acc: 0.9875 | Val Loss: 1.1347, Val Acc: 0.7442 | Duration: 21.79s
+Epoch 33/50 | Train Loss: 0.0351, Train Acc: 0.9890 | Val Loss: 1.1373, Val Acc: 0.7442 | Duration: 21.92s
+Epoch 34/50 | Train Loss: 0.0366, Train Acc: 0.9891 | Val Loss: 1.1388, Val Acc: 0.7439 | Duration: 21.68s
+Epoch 35/50 | Train Loss: 0.0348, Train Acc: 0.9875 | Val Loss: 1.1427, Val Acc: 0.7445 | Duration: 21.73s
+Epoch 36/50 | Train Loss: 0.0395, Train Acc: 0.9868 | Val Loss: 1.1432, Val Acc: 0.7442 | Duration: 21.98s
+Epoch 37/50 | Train Loss: 0.0380, Train Acc: 0.9877 | Val Loss: 1.1463, Val Acc: 0.7439 | Duration: 21.87s
+Epoch 38/50 | Train Loss: 0.0340, Train Acc: 0.9898 | Val Loss: 1.1490, Val Acc: 0.7439 | Duration: 21.80s
+Epoch 39/50 | Train Loss: 0.0366, Train Acc: 0.9881 | Val Loss: 1.1477, Val Acc: 0.7445 | Duration: 21.93s
+Epoch 40/50 | Train Loss: 0.0379, Train Acc: 0.9874 | Val Loss: 1.1478, Val Acc: 0.7439 | Duration: 21.56s
+Epoch 41/50 | Train Loss: 0.0348, Train Acc: 0.9888 | Val Loss: 1.1479, Val Acc: 0.7437 | Duration: 21.75s
+Epoch 42/50 | Train Loss: 0.0343, Train Acc: 0.9886 | Val Loss: 1.1481, Val Acc: 0.7434 | Duration: 21.94s
+Epoch 43/50 | Train Loss: 0.0366, Train Acc: 0.9885 | Val Loss: 1.1483, Val Acc: 0.7439 | Duration: 21.96s
+Epoch 44/50 | Train Loss: 0.0360, Train Acc: 0.9887 | Val Loss: 1.1484, Val Acc: 0.7437 | Duration: 21.75s
+Epoch 45/50 | Train Loss: 0.0394, Train Acc: 0.9865 | Val Loss: 1.1485, Val Acc: 0.7437 | Duration: 21.73s
+Epoch 46/50 | Train Loss: 0.0424, Train Acc: 0.9865 | Val Loss: 1.1485, Val Acc: 0.7434 | Duration: 21.98s
+Epoch 47/50 | Train Loss: 0.0360, Train Acc: 0.9876 | Val Loss: 1.1485, Val Acc: 0.7437 | Duration: 22.14s
+Epoch 48/50 | Train Loss: 0.0353, Train Acc: 0.9893 | Val Loss: 1.1489, Val Acc: 0.7434 | Duration: 21.77s
+Epoch 49/50 | Train Loss: 0.0363, Train Acc: 0.9889 | Val Loss: 1.1491, Val Acc: 0.7437 | Duration: 21.74s
+Epoch 50/50 | Train Loss: 0.0371, Train Acc: 0.9884 | Val Loss: 1.1494, Val Acc: 0.7437 | Duration: 21.78s
+--- Finished Training ---
+Best validation accuracy: 0.7445
+--- Training script finished. ---
+Job finished at: Thu Aug  7 09:35:20 EDT 2025
+--- Slurm Job Finished ---

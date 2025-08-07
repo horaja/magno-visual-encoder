@@ -46,3 +46,35 @@ Epoch 20/50 | Train Loss: 0.0043, Train Acc: 0.9987 | Val Loss: 2.6191, Val Acc:
 Epoch 21/50 | Train Loss: 0.0028, Train Acc: 0.9992 | Val Loss: 2.6376, Val Acc: 0.6525 | Duration: 21.83s
 Epoch 22/50 | Train Loss: 0.0023, Train Acc: 0.9995 | Val Loss: 2.6637, Val Acc: 0.6550 | Duration: 21.66s
 Epoch 23/50 | Train Loss: 0.0019, Train Acc: 0.9996 | Val Loss: 2.6942, Val Acc: 0.6538 | Duration: 21.67s
+Epoch 24/50 | Train Loss: 0.0017, Train Acc: 0.9995 | Val Loss: 2.7216, Val Acc: 0.6535 | Duration: 21.95s
+Epoch 25/50 | Train Loss: 0.0016, Train Acc: 0.9996 | Val Loss: 2.7527, Val Acc: 0.6532 | Duration: 21.93s
+Epoch 26/50 | Train Loss: 0.0014, Train Acc: 0.9996 | Val Loss: 2.7817, Val Acc: 0.6527 | Duration: 21.88s
+Epoch 27/50 | Train Loss: 0.0012, Train Acc: 0.9997 | Val Loss: 2.8125, Val Acc: 0.6522 | Duration: 21.83s
+Epoch 28/50 | Train Loss: 0.0010, Train Acc: 0.9997 | Val Loss: 2.8481, Val Acc: 0.6520 | Duration: 21.68s
+Epoch 29/50 | Train Loss: 0.0008, Train Acc: 0.9998 | Val Loss: 2.8796, Val Acc: 0.6512 | Duration: 21.70s
+Epoch 30/50 | Train Loss: 0.0007, Train Acc: 0.9999 | Val Loss: 2.9143, Val Acc: 0.6512 | Duration: 21.94s
+Epoch 31/50 | Train Loss: 0.0006, Train Acc: 0.9998 | Val Loss: 2.9162, Val Acc: 0.6507 | Duration: 21.88s
+Epoch 32/50 | Train Loss: 0.0006, Train Acc: 0.9999 | Val Loss: 2.9191, Val Acc: 0.6510 | Duration: 21.66s
+Epoch 33/50 | Train Loss: 0.0005, Train Acc: 0.9999 | Val Loss: 2.9226, Val Acc: 0.6515 | Duration: 21.80s
+Epoch 34/50 | Train Loss: 0.0005, Train Acc: 0.9999 | Val Loss: 2.9262, Val Acc: 0.6512 | Duration: 21.67s
+Epoch 35/50 | Train Loss: 0.0005, Train Acc: 0.9999 | Val Loss: 2.9313, Val Acc: 0.6515 | Duration: 21.89s
+Epoch 36/50 | Train Loss: 0.0005, Train Acc: 0.9999 | Val Loss: 2.9365, Val Acc: 0.6515 | Duration: 21.74s
+Epoch 37/50 | Train Loss: 0.0005, Train Acc: 0.9999 | Val Loss: 2.9419, Val Acc: 0.6512 | Duration: 21.67s
+Epoch 38/50 | Train Loss: 0.0005, Train Acc: 0.9999 | Val Loss: 2.9476, Val Acc: 0.6515 | Duration: 21.81s
+Epoch 39/50 | Train Loss: 0.0004, Train Acc: 0.9999 | Val Loss: 2.9541, Val Acc: 0.6515 | Duration: 21.96s
+Epoch 40/50 | Train Loss: 0.0004, Train Acc: 0.9999 | Val Loss: 2.9607, Val Acc: 0.6515 | Duration: 21.96s
+Epoch 41/50 | Train Loss: 0.0004, Train Acc: 0.9999 | Val Loss: 2.9613, Val Acc: 0.6515 | Duration: 21.72s
+Epoch 42/50 | Train Loss: 0.0004, Train Acc: 0.9999 | Val Loss: 2.9620, Val Acc: 0.6515 | Duration: 21.93s
+Epoch 43/50 | Train Loss: 0.0004, Train Acc: 0.9999 | Val Loss: 2.9627, Val Acc: 0.6515 | Duration: 21.89s
+Epoch 44/50 | Train Loss: 0.0004, Train Acc: 0.9999 | Val Loss: 2.9634, Val Acc: 0.6515 | Duration: 21.98s
+Epoch 45/50 | Train Loss: 0.0004, Train Acc: 0.9999 | Val Loss: 2.9642, Val Acc: 0.6515 | Duration: 21.93s
+Epoch 46/50 | Train Loss: 0.0004, Train Acc: 0.9999 | Val Loss: 2.9651, Val Acc: 0.6515 | Duration: 21.90s
+Epoch 47/50 | Train Loss: 0.0004, Train Acc: 0.9999 | Val Loss: 2.9659, Val Acc: 0.6517 | Duration: 21.82s
+Epoch 48/50 | Train Loss: 0.0004, Train Acc: 0.9999 | Val Loss: 2.9669, Val Acc: 0.6517 | Duration: 21.84s
+Epoch 49/50 | Train Loss: 0.0004, Train Acc: 0.9999 | Val Loss: 2.9677, Val Acc: 0.6520 | Duration: 21.87s
+Epoch 50/50 | Train Loss: 0.0004, Train Acc: 0.9999 | Val Loss: 2.9687, Val Acc: 0.6520 | Duration: 21.74s
+--- Finished Training ---
+Best validation accuracy: 0.6573
+--- Training script finished. ---
+Job finished at: Thu Aug  7 09:13:03 EDT 2025
+--- Slurm Job Finished ---
