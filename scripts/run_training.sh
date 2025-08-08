@@ -29,6 +29,7 @@ echo "Job started at: $(date)"
 PROJECT_ROOT=$(pwd)
 CONDA_ENV_NAME="drawings"
 TRAIN_SCRIPT_PATH="src/train.py"
+PATCH_PERCENTAGE=0.30
 
 # --- Create Log Directory ---
 mkdir -p logs
@@ -64,7 +65,7 @@ python ${TRAIN_SCRIPT_PATH} \
   --epochs 50 \
   --batch_size 32 \
   --learning_rate 1e-4 \
-  --patch_percentage 0.25 \
+  --patch_percentage ${PATCH_PERCENTAGE} \
   --num_workers 4
 echo "--- Training script finished. ---"
 

@@ -1,0 +1,29 @@
+--- Starting Slurm Job: SelectiveMagnoViT_Train (ID: 62130) ---
+Running on host: mind-1-19
+Allocated GPUs: 0
+Job started at: Thu Aug  7 13:18:30 EDT 2025
+Loading modules...
+Activating Conda environment: drawings
+Python executable: /home/horaja/.conda/envs/drawings/bin/python
+----------------------------------------
+--- Starting model evaluation... ---
+Using device: cuda
+Loading validation data for testing...
+Found 3925 images in 'val' split.
+Found 10 classes.
+Number of classes: 10
+Initializing and loading model...
+Model loaded successfully from models/checkpoints/best_model_pp0.2.pth
+
+--- Starting Evaluation ---
+
+--- Evaluation Results ---
+Patch Percentage:       20.0%
+Accuracy:               73.20%
+Total GFLOPs:           4.57 G
+Avg. Latency per image: 7.29 ms
+--------------------------
+Confusion matrix saved to results/confusion_matrix_pp0.2.png
+--- Testing script finished. ---
+Job finished at: Thu Aug  7 13:19:21 EDT 2025
+--- Slurm Job Finished ---

@@ -29,7 +29,7 @@ echo "Job started at: $(date)"
 PROJECT_ROOT=$(pwd)
 CONDA_ENV_NAME="drawings"
 TEST_SCRIPT_PATH="src/test.py"
-PATCH_PERCENTAGE=0.25 # The patch percentage of the model you want to test
+PATCH_PERCENTAGE=0.30 # The patch percentage of the model you want to test
 
 # --- Create Log and Results Directory ---
 mkdir -p logs
