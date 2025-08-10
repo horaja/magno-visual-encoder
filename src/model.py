@@ -100,7 +100,7 @@ class SelectiveMagnoViT(nn.Module):
     """
     The complete SelectiveMagnoViT model.
     """
-    def __init__(self, patch_percentage=0.25, num_classes=10, img_size=224, vit_model_name='vit_base_patch16_224_in21k'):
+    def __init__(self, patch_percentage=0.25, num_classes=10, img_size=32, patch_size=4, vit_model_name='vit_base_patch16_224'):
         """
         Args:
             patch_percentage (float): The percentage of patches to select.
@@ -109,17 +109,32 @@ class SelectiveMagnoViT(nn.Module):
         """
         super().__init__()
         
+        if img_size % patch_size != 0:
+            raise ValueError("Image size must be divisible by patch size.")
+        
         # --- Load the ViT Backbone (Module 5) ---
-        self.vit = timm.create_model(vit_model_name, pretrained=True, img_size=img_size)
-        self.patch_size = self.vit.patch_embed.patch_size[0]
+        self.vit = timm.create_model(vit_model_name, pretrained=True)
+        
+        embed_dim = self.vit.embed_dim
+        
+        self.vit.patch_embed = timm.models.vision_transformer.PatchEmbed(
+            img_size=img_size,
+            patch_size=patch_size,
+            in_chans=3,
+            embed_dim=embed_dim
+        )
+        
+        num_patches = self.vit.patch_embed.num_patches
+        self.vit.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
+        
+        # --- Instantiate Our Classifier Head
+        self.vit.head = nn.Linear(embed_dim, num_classes)
+        
+        self.patch_size = patch_size
         
         # --- Instantiate Our Custom Modules ---
         self.scorer = PatchImportanceScorer(patch_size=self.patch_size)
         self.selector = TopKPatchSelector(patch_percentage=patch_percentage)
-
-        # --- Classifier Head ---
-        # Replace the ViT's head with a new one for our number of classes
-        self.vit.head = nn.Linear(self.vit.head.in_features, num_classes)
 
     def forward(self, magno_image, line_drawing):
         """

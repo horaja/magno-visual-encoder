@@ -35,11 +35,14 @@ PATCH_PERCENTAGE=0.30
 mkdir -p logs
 
 # --- Environment Setup ---
-echo "Loading modules..."
-module load anaconda3-2023.03 cuda-12.4
-echo "Activating Conda environment: ${CONDA_ENV_NAME}"
-eval "$(conda shell.bash hook)"
-conda activate ${CONDA_ENV_NAME}
+# echo "Loading modules..."
+# module load anaconda3-2023.03 cuda-12.4
+echo "Activating Conda environment: ${CONDA_ENV_NAME} via mamba"
+eval "$(mamba shell hook --shell bash)"
+
+mamba env update -f environment.yml || mamba env create -f environment.yml -b
+
+mamba activate ${CONDA_ENV_NAME}
 echo "Python executable: $(which python)"
 echo "----------------------------------------"
 
@@ -62,15 +65,16 @@ python ${TRAIN_SCRIPT_PATH} \
   --magno_dir "data/preprocessed/magno_images" \
   --lines_dir "data/preprocessed/line_drawings" \
   --output_dir "models/checkpoints" \
-  --epochs 50 \
+  --epochs 100 \
   --batch_size 32 \
   --learning_rate 1e-4 \
   --patch_percentage ${PATCH_PERCENTAGE} \
-  --num_workers 4
+  --num_workers 4 \
+  --img_size 32 \
+  --patch_size 4
 echo "--- Training script finished. ---"
 
 
 # --- Cleanup ---
-conda deactivate
 echo "Job finished at: $(date)"
 echo "--- Slurm Job Finished ---"

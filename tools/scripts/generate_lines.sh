@@ -25,9 +25,11 @@ STYLE_NAME="opensketch_style"
 mkdir -p logs
 
 # --- Environment Setup ---
-module load anaconda3 cuda
-eval "$(conda shell.bash hook)"
-conda activate ${CONDA_ENV_NAME}
+eval "$(mamba shell hook --shell bash)"
+
+mamba env update -f environment.yml || mamba env create -f environment.yml -b
+
+mamba activate ${CONDA_ENV_NAME}
 
 # --- Change to the line drawer directory ---
 cd ${LINE_DRAWER_DIR}
@@ -49,14 +51,14 @@ for SUB_DIR in train val; do
     --dataroot "${RAW_DATA_INPUT_DIR}" \
     --magno_output_dir "${MAGNO_OUTPUT_DIR}" \
     --line_drawing_output_dir "${LINE_DRAWING_OUTPUT_DIR}" \
-    --size 256 # Process at the model's expected size
+    --size 32 # Process at the model's expected size
 
 done
 
 echo "--- All Python scripts completed ---"
 
 # --- Cleanup ---
-conda deactivate
+deactivate
 cd ${PROJECT_ROOT}
 echo "Current directory restored to: $(pwd)"
 echo "--- Slurm Job Finished ---"

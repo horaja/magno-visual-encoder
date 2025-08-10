@@ -85,7 +85,8 @@ def main(args):
     model = SelectiveMagnoViT(
         patch_percentage=args.patch_percentage,
         num_classes=num_classes,
-        img_size=args.img_size
+        img_size=args.img_size,
+        patch_size=args.patch_size
     ).to(device)
 
     optimizer = AdamW(model.parameters(), lr=args.learning_rate, weight_decay=0.03)
@@ -187,6 +188,7 @@ if __name__ == '__main__':
     # Model hyperparameters
     parser.add_argument('--patch_percentage', type=float, default=0.25, help="Percentage of patches to select (e.g., 0.25 for 25%).")
     parser.add_argument('--img_size', type=int, default=256, help="Image size to train the model on.")
+    parser.add_argument('--patch_size', type=int, default=16, help="Patch size")
     
     # Training hyperparameters
     parser.add_argument('--epochs', type=int, default=50, help="Number of training epochs.")
