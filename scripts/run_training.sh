@@ -1,5 +1,4 @@
 #!/bin/bash
-
 #SBATCH --job-name=SelectiveMagnoViT_Train
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=horaja@cs.cmu.edu
@@ -29,7 +28,7 @@ echo "Job started at: $(date)"
 PROJECT_ROOT=$(pwd)
 CONDA_ENV_NAME="drawings"
 TRAIN_SCRIPT_PATH="src/train.py"
-PATCH_PERCENTAGE=0.30
+PATCH_PERCENTAGE=1.0
 
 # --- Create Log Directory ---
 mkdir -p logs
@@ -67,11 +66,11 @@ python ${TRAIN_SCRIPT_PATH} \
   --output_dir "models/checkpoints" \
   --epochs 100 \
   --batch_size 32 \
-  --learning_rate 1e-4 \
+  --learning_rate 1e-5 \
   --patch_percentage ${PATCH_PERCENTAGE} \
   --num_workers 4 \
-  --img_size 32 \
-  --patch_size 4
+  --img_size 64 \
+  --patch_size 8
 echo "--- Training script finished. ---"
 
 

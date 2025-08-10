@@ -65,7 +65,8 @@ def main(args):
     model = SelectiveMagnoViT(
         patch_percentage=args.patch_percentage,
         num_classes=num_classes,
-        img_size=args.img_size
+        img_size=args.img_size,
+        patch_size=args.patch_size
     ).to(device)
 
     model_path = os.path.join(args.model_dir, f"best_model_pp{args.patch_percentage}.pth")
@@ -143,7 +144,8 @@ if __name__ == '__main__':
     # Model Hyperparameters
     parser.add_argument('--patch_percentage', type=float, default=0.25, help="Patch percentage the model was trained with.")
     parser.add_argument('--img_size', type=int, default=256, help="Image size the model was trained on.")
-    
+    parser.add_argument('--patch_size', type=int, default=16, help="Patch size")
+
     # Evaluation settings
     parser.add_argument('--batch_size', type=int, default=1, help="Batch size for evaluation (1 is best for latency).")
     parser.add_argument('--num_workers', type=int, default=4, help="Number of worker processes for data loading.")

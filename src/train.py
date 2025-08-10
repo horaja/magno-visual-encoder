@@ -13,7 +13,7 @@ from dataset import ImageNetteDataset
 
 # Import a standard optimizer and learning rate scheduler
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 def main(args):
     """
@@ -89,12 +89,14 @@ def main(args):
         patch_size=args.patch_size
     ).to(device)
 
-    optimizer = AdamW(model.parameters(), lr=args.learning_rate, weight_decay=0.03)
-    scheduler = StepLR(optimizer, step_size=10, gamma=0.1) # Reduce LR every 10 epochs
+    optimizer = AdamW(model.parameters(), lr=args.learning_rate, weight_decay=0.1)
+    scheduler = CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=1e-6)
     criterion = nn.CrossEntropyLoss() # Standard loss for classification
 
     # --- 4. Training and Validation Loop ---
     best_val_accuracy = 0.0
+    patience = 20
+    patience_counter = 0
     print("--- Starting Training ---")
 
     for epoch in range(args.epochs):
@@ -172,6 +174,13 @@ def main(args):
             checkpoint_path = os.path.join(args.output_dir, f"best_model_pp{args.patch_percentage}.pth")
             torch.save(model.state_dict(), checkpoint_path)
             print(f"New best model saved to {checkpoint_path} with accuracy: {val_accuracy:.4f}")
+            patience_counter = 0  # Reset patience counter
+        else:
+            patience_counter += 1
+            print(f"No improvement in validation accuracy. Patience counter: {patience_counter}/{patience}")
+            if patience_counter >= patience:
+                print("Early stopping triggered. No improvement for 20 epochs.")
+                break
 
     print("--- Finished Training ---")
     print(f"Best validation accuracy: {best_val_accuracy:.4f}")

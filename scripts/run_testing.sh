@@ -29,18 +29,19 @@ echo "Job started at: $(date)"
 PROJECT_ROOT=$(pwd)
 CONDA_ENV_NAME="drawings"
 TEST_SCRIPT_PATH="src/test.py"
-PATCH_PERCENTAGE=0.30 # The patch percentage of the model you want to test
+PATCH_PERCENTAGE=0.5 # The patch percentage of the model you want to test
 
 # --- Create Log and Results Directory ---
 mkdir -p logs
 mkdir -p results
 
 # --- Environment Setup ---
-echo "Loading modules..."
-module load anaconda3-2023.03 cuda-12.4
-echo "Activating Conda environment: ${CONDA_ENV_NAME}"
-eval "$(conda shell.bash hook)"
-conda activate ${CONDA_ENV_NAME}
+echo "Activating Conda environment: ${CONDA_ENV_NAME} with mamba"
+eval "$(mamba shell hook --shell bash)"
+
+mamba env update -f environment.yml || mamba env create -f environment.yml -b
+
+mamba activate ${CONDA_ENV_NAME}
 echo "Python executable: $(which python)"
 echo "----------------------------------------"
 
@@ -56,12 +57,12 @@ python ${TEST_SCRIPT_PATH} \
   --model_dir "models/checkpoints" \
   --results_dir "results" \
   --patch_percentage ${PATCH_PERCENTAGE} \
-  --img_size 256 \
+  --img_size 32 \
+  --patch_size 2 \
   --num_workers 4
 echo "--- Testing script finished. ---"
 
 
 # --- Cleanup ---
-conda deactivate
 echo "Job finished at: $(date)"
 echo "--- Slurm Job Finished ---"

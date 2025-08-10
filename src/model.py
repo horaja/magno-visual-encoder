@@ -100,7 +100,7 @@ class SelectiveMagnoViT(nn.Module):
     """
     The complete SelectiveMagnoViT model.
     """
-    def __init__(self, patch_percentage=0.25, num_classes=10, img_size=32, patch_size=4, vit_model_name='vit_base_patch16_224'):
+    def __init__(self, patch_percentage=0.25, num_classes=10, img_size=32, patch_size=4, vit_model_name='vit_tiny_patch16_224.augreg_in21k'):
         """
         Args:
             patch_percentage (float): The percentage of patches to select.

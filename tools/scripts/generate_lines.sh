@@ -51,14 +51,13 @@ for SUB_DIR in train val; do
     --dataroot "${RAW_DATA_INPUT_DIR}" \
     --magno_output_dir "${MAGNO_OUTPUT_DIR}" \
     --line_drawing_output_dir "${LINE_DRAWING_OUTPUT_DIR}" \
-    --size 32 # Process at the model's expected size
+    --size 64 # Process at the model's expected size
 
 done
 
 echo "--- All Python scripts completed ---"
 
 # --- Cleanup ---
-deactivate
 cd ${PROJECT_ROOT}
 echo "Current directory restored to: $(pwd)"
 echo "--- Slurm Job Finished ---"
