@@ -28,8 +28,8 @@ echo "Job started at: $(date)"
 # --- Configuration & Hyperparameters ---
 PROJECT_ROOT=$(pwd)
 CONDA_ENV_NAME="drawings"
-TEST_SCRIPT_PATH="src/test.py"
-PATCH_PERCENTAGE=0.5 # The patch percentage of the model you want to test
+TEST_SCRIPT_PATH="src/test_visual.py"
+PATCH_PERCENTAGE=0.3 # The patch percentage of the model you want to test
 
 # --- Create Log and Results Directory ---
 mkdir -p logs
@@ -57,8 +57,8 @@ python ${TEST_SCRIPT_PATH} \
   --model_dir "models/checkpoints" \
   --results_dir "results" \
   --patch_percentage ${PATCH_PERCENTAGE} \
-  --img_size 32 \
-  --patch_size 2 \
+  --img_size 64 \
+  --patch_size 4 \
   --num_workers 4
 echo "--- Testing script finished. ---"
 

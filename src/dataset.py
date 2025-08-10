@@ -78,6 +78,7 @@ class ImageNetteDataset(Dataset):
             magno_image = self.transform(magno_image)
             # Apply a simple ToTensor for the line drawing
             line_drawing = transforms.ToTensor()(line_drawing)
+            line_drawing = 1.0 - line_drawing
 
         sample = {
             'magno_image': magno_image,
