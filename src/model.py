@@ -98,25 +98,47 @@ class TopKPatchSelector(nn.Module):
 
 class SelectiveMagnoViT(nn.Module):
     """
-    The complete SelectiveMagnoViT model.
+    SelectiveMagnoViT: A Vision Transformer that selectively processes patches
+    based on importance scores from line drawings.
+    
+    Args:
+        patch_percentage (float): Fraction of patches to select (0-1).
+        num_classes (int): Number of output classes.
+        img_size (int): Input image size.
+        patch_size (int): Size of each patch.
+        vit_model_name (str): Name of the pre-trained ViT model from timm.
+        embed_dim (int, optional): Embedding dimension for custom ViT.
     """
-    def __init__(self, patch_percentage=0.25, num_classes=10, img_size=32, patch_size=4, vit_model_name='vit_tiny_patch16_224.augreg_in21k'):
-        """
-        Args:
-            patch_percentage (float): The percentage of patches to select.
-            num_classes (int): The number of output classes.
-            vit_model_name (str): The name of the pre-trained ViT model from timm.
-        """
+    
+    def __init__(self, 
+                 patch_percentage=0.25,
+                 num_classes=10,
+                 img_size=64,
+                 patch_size=4,
+                 vit_model_name='vit_tiny_patch16_224.augreg_in21k',
+                 embed_dim=None):
         super().__init__()
         
+        # Validate inputs
+        if not 0 < patch_percentage <= 1.0:
+            raise ValueError(f"patch_percentage must be in (0, 1], got {patch_percentage}")
         if img_size % patch_size != 0:
-            raise ValueError("Image size must be divisible by patch size.")
+            raise ValueError(f"img_size ({img_size}) must be divisible by patch_size ({patch_size})")
         
-        # --- Load the ViT Backbone (Module 5) ---
+        # Store configuration
+        self.patch_percentage = patch_percentage
+        self.num_classes = num_classes
+        self.img_size = img_size
+        self.patch_size = patch_size
+        
+        # Load ViT backbone
         self.vit = timm.create_model(vit_model_name, pretrained=True)
         
-        embed_dim = self.vit.embed_dim
+        # Get embedding dimension
+        if embed_dim is None:
+            embed_dim = self.vit.embed_dim
         
+        # Replace patch embedding layer for custom image size
         self.vit.patch_embed = timm.models.vision_transformer.PatchEmbed(
             img_size=img_size,
             patch_size=patch_size,
@@ -124,87 +146,84 @@ class SelectiveMagnoViT(nn.Module):
             embed_dim=embed_dim
         )
         
+        # Update positional embeddings
         num_patches = self.vit.patch_embed.num_patches
-        self.vit.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
+        self.vit.pos_embed = nn.Parameter(
+            torch.zeros(1, num_patches + 1, embed_dim)
+        )
+        nn.init.trunc_normal_(self.vit.pos_embed, std=0.02)
         
-        # --- Instantiate Our Classifier Head
+        # Replace classifier head
         self.vit.head = nn.Linear(embed_dim, num_classes)
         
-        self.patch_size = patch_size
-        
-        # --- Instantiate Our Custom Modules ---
-        self.scorer = PatchImportanceScorer(patch_size=self.patch_size)
+        # Initialize custom modules
+        self.scorer = PatchImportanceScorer(patch_size=patch_size)
         self.selector = TopKPatchSelector(patch_percentage=patch_percentage)
-
+        
+        # Store metadata
+        self.num_patches = num_patches
+        self.embed_dim = embed_dim
+    
     def forward(self, magno_image, line_drawing):
         """
-        The forward pass implementing the full SelectiveMagnoViT pipeline.
+        Forward pass through the model.
         
         Args:
             magno_image (torch.Tensor): Batch of Magno images (B, 3, H, W).
-            line_drawing (torch.Tensor): Batch of Line Drawings (B, 1, H, W).
-            
+            line_drawing (torch.Tensor): Batch of line drawings (B, 1, H, W).
+        
         Returns:
-            torch.Tensor: The final classification logits (B, num_classes).
+            torch.Tensor: Classification logits (B, num_classes).
         """
-        # --- Module 2: Score Patches ---
-        # Get density scores from the line drawing
+        # Score patches based on line drawing
         patch_scores = self.scorer(line_drawing)
-
-        # --- Pre-computation for Module 3 & 4 ---
-        # Use the ViT's patch embedding layer to get all patches from the Magno image
-        all_magno_patches = self.vit.patch_embed(magno_image) # (B, num_patches, embed_dim)
         
-        # Get the ViT's positional embeddings
-        pos_embed = self.vit.pos_embed # (1, num_patches + 1, embed_dim)
+        # Extract all patches from Magno image
+        all_patches = self.vit.patch_embed(magno_image)
         
-        # --- Module 3 & 4: Select Top-K Patches and Add Positional Embeddings ---
-        selected_patch_embeddings = self.selector(all_magno_patches, pos_embed, patch_scores)
+        # Select top-k patches with positional embeddings
+        selected_patches = self.selector(
+            all_patches,
+            self.vit.pos_embed,
+            patch_scores
+        )
         
-        # --- Module 5: Process with ViT Backbone ---
-        # Get the [CLS] token from the ViT and add its positional embedding
-        cls_token_with_pos = self.vit.cls_token + pos_embed[:, :1, :] # (1, 1, D)
+        # Prepare [CLS] token
+        cls_token_with_pos = self.vit.cls_token + self.vit.pos_embed[:, :1, :]
         
-        # Prepend the [CLS] token to the sequence of selected patches
-        # (B, k, D) -> (B, k + 1, D)
-        full_sequence = torch.cat([cls_token_with_pos.expand(magno_image.shape[0], -1, -1), selected_patch_embeddings], dim=1)
+        # Combine [CLS] token with selected patches
+        batch_size = magno_image.shape[0]
+        full_sequence = torch.cat([
+            cls_token_with_pos.expand(batch_size, -1, -1),
+            selected_patches
+        ], dim=1)
         
         # Apply dropout
         full_sequence = self.vit.pos_drop(full_sequence)
         
-        # Pass the sparse sequence through the transformer blocks
+        # Process through transformer blocks
         x = self.vit.blocks(full_sequence)
         x = self.vit.norm(x)
         
-        # Get the output corresponding to the [CLS] token for classification
+        # Extract [CLS] token output
         cls_output = x[:, 0]
         
-        # Pass through the final classifier head
+        # Final classification
         logits = self.vit.head(cls_output)
         
         return logits
-
-# if __name__ == '__main__':
-#     # --- Verification and Example Usage ---
-#     model = SelectiveMagnoViT(patch_percentage=0.25, num_classes=10).cuda()
-#     model.eval()
-
-#     # Create dummy input tensors
-#     magno_img = torch.randn(4, 3, 224, 224).cuda()  # Batch of 4
-#     line_img = torch.rand(4, 1, 224, 224).cuda()   # Values between 0 and 1
     
-#     print("--- Model Instantiated ---")
-#     print(f"Patch Size: {model.patch_size}")
-    
-#     # Run a forward pass
-#     with torch.no_grad():
-#         output_logits = model(magno_img, line_img)
-    
-#     print("\n--- Verification ---")
-#     print(f"Input Magno Shape: {magno_img.shape}")
-#     print(f"Input Line Shape:  {line_img.shape}")
-#     print(f"Output Logits Shape: {output_logits.shape}")
-    
-#     # Check output shape
-#     assert output_logits.shape == (4, 10), "Output shape is incorrect!"
-#     print("\nModel forward pass successful!")
+    def get_selected_patches_indices(self, line_drawing):
+        """
+        Get indices of selected patches for visualization.
+        
+        Args:
+            line_drawing (torch.Tensor): Line drawing (B, 1, H, W).
+        
+        Returns:
+            torch.Tensor: Indices of selected patches (B, k).
+        """
+        patch_scores = self.scorer(line_drawing)
+        k = int(patch_scores.shape[1] * self.patch_percentage)
+        _, indices = torch.topk(patch_scores, k=k, dim=1)
+        return indices

@@ -11,7 +11,7 @@ dependencies:
   - numpy
   - scipy
   - pip
-  - tensorboard
+  - tensorboard>=2.9.0
   - pillow
   - opencv
   - scikit-learn
@@ -27,3 +27,4 @@ dependencies:
      - ninja
      - ftfy
      - regex
+     - protobuf==3.20.*
