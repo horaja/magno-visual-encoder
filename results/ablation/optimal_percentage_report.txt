@@ -1,0 +1,55 @@
+================================================================================
+OPTIMAL PATCH PERCENTAGE ANALYSIS REPORT
+================================================================================
+
+EXECUTIVE SUMMARY
+----------------------------------------
+Recommended Patch Percentage: 70.0%
+Expected Accuracy: 0.5325
+Strategy: Top-K (Line-Guided)
+
+
+RANDOM SELECTION
+----------------------------------------
+Knee Point (Optimal Trade-off): 60.0% (Accuracy: 0.4828)
+
+Accuracy Thresholds:
+  90%_of_max: 80.0% patches (Acc: 0.5786)
+  95%_of_max: 80.0% patches (Acc: 0.5786)
+  98%_of_max: 90.0% patches (Acc: 0.5962)
+  99%_of_max: 100.0% patches (Acc: 0.6064)
+
+Most Efficient Point: 10.0% (Efficiency Ratio: 2.09)
+
+TOP-K (LINE-GUIDED)
+----------------------------------------
+Knee Point (Optimal Trade-off): 70.0% (Accuracy: 0.5325)
+
+Accuracy Thresholds:
+  90%_of_max: 80.0% patches (Acc: 0.5659)
+  95%_of_max: 90.0% patches (Acc: 0.5952)
+  98%_of_max: 90.0% patches (Acc: 0.5952)
+  99%_of_max: 100.0% patches (Acc: 0.6064)
+
+Most Efficient Point: 10.0% (Efficiency Ratio: 2.07)
+
+PROBABILISTIC SAMPLING
+----------------------------------------
+Knee Point (Optimal Trade-off): 70.0% (Accuracy: 0.5419)
+
+Accuracy Thresholds:
+  90%_of_max: 80.0% patches (Acc: 0.5794)
+  95%_of_max: 80.0% patches (Acc: 0.5794)
+  98%_of_max: 90.0% patches (Acc: 0.5949)
+  99%_of_max: 100.0% patches (Acc: 0.6064)
+
+Most Efficient Point: 10.0% (Efficiency Ratio: 2.10)
+
+================================================================================
+USE CASE RECOMMENDATIONS
+================================================================================
+
+Real-time (Latency Critical)   ->  30.0% patches (Accuracy: 0.2721, Speedup: 3.3x)
+Balanced (Mobile/Edge)         ->  70.0% patches (Accuracy: 0.5325, Speedup: 1.4x)
+High Accuracy (Server)         ->  70.0% patches (Accuracy: 0.5325, Speedup: 1.4x)
+Maximum Accuracy               -> 100.0% patches (Accuracy: 0.6064, Speedup: 1.0x)

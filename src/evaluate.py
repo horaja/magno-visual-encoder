@@ -960,7 +960,7 @@ def ablation_study(args):
     results = evaluator.run_ablation_study(patch_percentages)
     
     # Analyze optimal percentages
-    evaluator.analyze_optimal_percentages(output_dir)
+    evaluator.analyze_optimal_percentages(args.output_dir or output_dir)
     
     # Create visualizations
     print("\nGenerating visualizations...")
