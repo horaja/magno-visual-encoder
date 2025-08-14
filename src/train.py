@@ -1,50 +1,228 @@
 import os
 import argparse
+import json
+from datetime import datetime
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms
 from tqdm import tqdm
 import time
 
-# Import our custom modules
 from model import SelectiveMagnoViT
 from dataset import ImageNetteDataset
-
-# Import a standard optimizer and learning rate scheduler
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import CosineAnnealingLR
+
+
+class Trainer:
+    """Handles training and validation of SelectiveMagnoViT model."""
+    
+    def __init__(self, model, train_loader, val_loader, config, device):
+        self.model = model
+        self.train_loader = train_loader
+        self.val_loader = val_loader
+        self.config = config
+        self.device = device
+        
+        # Setup optimizer and scheduler
+        self.optimizer = AdamW(
+            model.parameters(),
+            lr=config['learning_rate'],
+            weight_decay=config['weight_decay']
+        )
+        self.scheduler = CosineAnnealingLR(
+            self.optimizer,
+            T_max=config['epochs'],
+            eta_min=1e-6
+        )
+        self.criterion = nn.CrossEntropyLoss()
+        
+        # Setup tensorboard
+        if config.get('tensorboard_dir'):
+            self.writer = SummaryWriter(config['tensorboard_dir'])
+        else:
+            self.writer = None
+        
+        # Training state
+        self.best_val_accuracy = 0.0
+        self.patience_counter = 0
+        self.epoch = 0
+        
+    def train_epoch(self):
+        """Train for one epoch."""
+        self.model.train()
+        running_loss = 0.0
+        correct = 0
+        total = 0
+        
+        progress_bar = tqdm(self.train_loader, desc=f"Epoch {self.epoch+1} [Train]")
+        for batch in progress_bar:
+            magno_images = batch['magno_image'].to(self.device)
+            line_drawings = batch['line_drawing'].to(self.device)
+            labels = batch['label'].to(self.device)
+            
+            self.optimizer.zero_grad()
+            outputs = self.model(magno_images, line_drawings)
+            loss = self.criterion(outputs, labels)
+            loss.backward()
+            self.optimizer.step()
+            
+            running_loss += loss.item() * magno_images.size(0)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+            
+            progress_bar.set_postfix({'loss': loss.item()})
+        
+        train_loss = running_loss / total
+        train_accuracy = correct / total
+        
+        return train_loss, train_accuracy
+    
+    def validate(self):
+        """Validate the model."""
+        self.model.eval()
+        running_loss = 0.0
+        correct = 0
+        total = 0
+        
+        with torch.no_grad():
+            progress_bar = tqdm(self.val_loader, desc=f"Epoch {self.epoch+1} [Val]")
+            for batch in progress_bar:
+                magno_images = batch['magno_image'].to(self.device)
+                line_drawings = batch['line_drawing'].to(self.device)
+                labels = batch['label'].to(self.device)
+                
+                outputs = self.model(magno_images, line_drawings)
+                loss = self.criterion(outputs, labels)
+                
+                running_loss += loss.item() * magno_images.size(0)
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+        
+        val_loss = running_loss / total
+        val_accuracy = correct / total
+        
+        return val_loss, val_accuracy
+    
+    def save_checkpoint(self, path, is_best=False):
+        """Save model checkpoint."""
+        checkpoint = {
+            'epoch': self.epoch,
+            'model_state_dict': self.model.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'scheduler_state_dict': self.scheduler.state_dict(),
+            'best_val_accuracy': self.best_val_accuracy,
+            'config': self.config
+        }
+        torch.save(checkpoint, path)
+        
+        if is_best:
+            best_path = path.replace('.pth', '_best.pth')
+            torch.save(self.model.state_dict(), best_path)
+    
+    def train(self):
+        """Full training loop."""
+        print("\n" + "="*60)
+        print("TRAINING CONFIGURATION")
+        print("="*60)
+        for key, value in self.config.items():
+            print(f"  {key}: {value}")
+        print("="*60 + "\n")
+        
+        for epoch in range(self.config['epochs']):
+            self.epoch = epoch
+            start_time = time.time()
+            
+            # Train
+            train_loss, train_acc = self.train_epoch()
+            
+            # Validate
+            val_loss, val_acc = self.validate()
+            
+            # Update learning rate
+            self.scheduler.step()
+            
+            # Log to tensorboard
+            if self.writer:
+                self.writer.add_scalar('Loss/train', train_loss, epoch)
+                self.writer.add_scalar('Loss/val', val_loss, epoch)
+                self.writer.add_scalar('Accuracy/train', train_acc, epoch)
+                self.writer.add_scalar('Accuracy/val', val_acc, epoch)
+                self.writer.add_scalar('Learning_rate', 
+                                      self.optimizer.param_groups[0]['lr'], epoch)
+            
+            # Print progress
+            epoch_time = time.time() - start_time
+            print(f"Epoch {epoch+1}/{self.config['epochs']} "
+                  f"| Train Loss: {train_loss:.4f}, Acc: {train_acc:.4f} "
+                  f"| Val Loss: {val_loss:.4f}, Acc: {val_acc:.4f} "
+                  f"| Time: {epoch_time:.2f}s")
+            
+            # Check if best model
+            is_best = val_acc > self.best_val_accuracy
+            if is_best:
+                self.best_val_accuracy = val_acc
+                self.patience_counter = 0
+                print(f"  → New best model! Accuracy: {val_acc:.4f}")
+                
+                # Save best model
+                best_path = os.path.join(
+                    self.config['output_dir'],
+                    f"best_model_pp{self.config['patch_percentage']}.pth"
+                )
+                torch.save(self.model.state_dict(), best_path)
+            else:
+                self.patience_counter += 1
+                
+            # Early stopping
+            if self.patience_counter >= self.config['patience']:
+                print(f"\nEarly stopping triggered after {epoch+1} epochs.")
+                break
+        
+        # Final summary
+        print("\n" + "="*60)
+        print("TRAINING COMPLETED")
+        print(f"Best Validation Accuracy: {self.best_val_accuracy:.4f}")
+        print("="*60)
+        
+        if self.writer:
+            self.writer.close()
+        
+        return self.best_val_accuracy
+
 
 def main(args):
-    """
-    Main function to orchestrate the training and validation process.
-    """
-    # --- 1. Device and Directory Setup ---
+    """Main training function."""
+    # Setup device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
-
-    # Create the output directory for saving models if it doesn't exist
+    
+    # Create output directory
     os.makedirs(args.output_dir, exist_ok=True)
-
-    # --- 2. Data Loading ---
-    # Define transformations for the ViT input (Magno images)
-    # These should match the standard transformations for ViT models
+    if args.tensorboard_dir:
+        os.makedirs(args.tensorboard_dir, exist_ok=True)
+    
+    # Setup data transforms
     train_transform = transforms.Compose([
-        transforms.RandomResizedCrop(args.img_size, scale=(0.8, 1.0)), # Randomly zoom and crop
-        transforms.RandomHorizontalFlip(), # Flip images horizontally
-        transforms.ColorJitter(brightness=0.2, contrast=0.2), # Randomly change brightness/contrast
+        transforms.RandomResizedCrop(args.img_size, scale=(0.8, 1.0)),
+        transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
     
     val_transform = transforms.Compose([
-        transforms.Resize((args.img_size, args.img_size)), # Keep validation consistent
+        transforms.Resize((args.img_size, args.img_size)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
-
-    # Create datasets for training and validation
-    print("Loading training data...")
+    
+    # Load datasets
+    print("Loading datasets...")
     train_dataset = ImageNetteDataset(
         magno_root=args.magno_dir,
         lines_root=args.lines_dir,
@@ -52,15 +230,14 @@ def main(args):
         transform=train_transform
     )
     
-    print("Loading validation data...")
     val_dataset = ImageNetteDataset(
         magno_root=args.magno_dir,
         lines_root=args.lines_dir,
         split='val',
         transform=val_transform
     )
-
-    # Create DataLoaders
+    
+    # Create data loaders
     train_loader = DataLoader(
         train_dataset,
         batch_size=args.batch_size,
@@ -77,122 +254,71 @@ def main(args):
         pin_memory=True
     )
     
+    # Initialize model
     num_classes = len(train_dataset.class_names)
     print(f"Number of classes: {num_classes}")
-
-    # --- 3. Model, Optimizer, and Loss Function ---
-    print("Initializing model...")
+    
     model = SelectiveMagnoViT(
         patch_percentage=args.patch_percentage,
         num_classes=num_classes,
-        img_size=args.img_size
+        img_size=args.img_size,
+        patch_size=args.patch_size,
+        vit_model_name=args.vit_model_name
     ).to(device)
-
-    optimizer = AdamW(model.parameters(), lr=args.learning_rate, weight_decay=0.03)
-    scheduler = StepLR(optimizer, step_size=10, gamma=0.1) # Reduce LR every 10 epochs
-    criterion = nn.CrossEntropyLoss() # Standard loss for classification
-
-    # --- 4. Training and Validation Loop ---
-    best_val_accuracy = 0.0
-    print("--- Starting Training ---")
-
-    for epoch in range(args.epochs):
-        start_time = time.time()
-        
-        # --- Training Phase ---
-        model.train()
-        running_loss = 0.0
-        correct_predictions = 0
-        total_samples = 0
-
-        progress_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{args.epochs} [Train]")
-        for batch in progress_bar:
-            magno_images = batch['magno_image'].to(device)
-            line_drawings = batch['line_drawing'].to(device)
-            labels = batch['label'].to(device)
-
-            # Zero the parameter gradients
-            optimizer.zero_grad()
-
-            # Forward pass
-            outputs = model(magno_images, line_drawings)
-            loss = criterion(outputs, labels)
-
-            # Backward pass and optimize
-            loss.backward()
-            optimizer.step()
-
-            # Statistics
-            running_loss += loss.item() * magno_images.size(0)
-            _, predicted = torch.max(outputs.data, 1)
-            total_samples += labels.size(0)
-            correct_predictions += (predicted == labels).sum().item()
-            
-            progress_bar.set_postfix(loss=loss.item())
-
-        train_loss = running_loss / total_samples
-        train_accuracy = correct_predictions / total_samples
-
-        # --- Validation Phase ---
-        model.eval()
-        val_loss = 0.0
-        correct_predictions = 0
-        total_samples = 0
-        
-        with torch.no_grad():
-            progress_bar_val = tqdm(val_loader, desc=f"Epoch {epoch+1}/{args.epochs} [Val]")
-            for batch in progress_bar_val:
-                magno_images = batch['magno_image'].to(device)
-                line_drawings = batch['line_drawing'].to(device)
-                labels = batch['label'].to(device)
-
-                outputs = model(magno_images, line_drawings)
-                loss = criterion(outputs, labels)
-
-                val_loss += loss.item() * magno_images.size(0)
-                _, predicted = torch.max(outputs.data, 1)
-                total_samples += labels.size(0)
-                correct_predictions += (predicted == labels).sum().item()
-
-        val_loss = val_loss / total_samples
-        val_accuracy = correct_predictions / total_samples
-        
-        scheduler.step() # Update learning rate
-
-        epoch_duration = time.time() - start_time
-        print(f"Epoch {epoch+1}/{args.epochs} | "
-              f"Train Loss: {train_loss:.4f}, Train Acc: {train_accuracy:.4f} | "
-              f"Val Loss: {val_loss:.4f}, Val Acc: {val_accuracy:.4f} | "
-              f"Duration: {epoch_duration:.2f}s")
-
-        # --- 5. Checkpointing ---
-        if val_accuracy > best_val_accuracy:
-            best_val_accuracy = val_accuracy
-            checkpoint_path = os.path.join(args.output_dir, f"best_model_pp{args.patch_percentage}.pth")
-            torch.save(model.state_dict(), checkpoint_path)
-            print(f"New best model saved to {checkpoint_path} with accuracy: {val_accuracy:.4f}")
-
-    print("--- Finished Training ---")
-    print(f"Best validation accuracy: {best_val_accuracy:.4f}")
+    
+    # Setup configuration
+    config = {
+        'epochs': args.epochs,
+        'batch_size': args.batch_size,
+        'learning_rate': args.learning_rate,
+        'weight_decay': args.weight_decay,
+        'patience': args.patience,
+        'patch_percentage': args.patch_percentage,
+        'img_size': args.img_size,
+        'patch_size': args.patch_size,
+        'vit_model_name': args.vit_model_name,
+        'num_classes': num_classes,
+        'output_dir': args.output_dir,
+        'tensorboard_dir': args.tensorboard_dir,
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    # Save configuration
+    config_path = os.path.join(args.output_dir, f"config_pp{args.patch_percentage}.json")
+    with open(config_path, 'w') as f:
+        json.dump(config, f, indent=2)
+    print(f"Configuration saved to {config_path}")
+    
+    # Initialize trainer and start training
+    trainer = Trainer(model, train_loader, val_loader, config, device)
+    best_accuracy = trainer.train()
+    
+    return best_accuracy
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Train the SelectiveMagnoViT model.")
+    parser = argparse.ArgumentParser(description="Train SelectiveMagnoViT model")
     
     # Data paths
-    parser.add_argument('--magno_dir', type=str, required=True, help="Path to the root directory of Magno images.")
-    parser.add_argument('--lines_dir', type=str, required=True, help="Path to the root directory of Line Drawings.")
-    parser.add_argument('--output_dir', type=str, required=True, help="Directory to save model checkpoints.")
+    parser.add_argument('--magno_dir', type=str, required=True)
+    parser.add_argument('--lines_dir', type=str, required=True)
+    parser.add_argument('--output_dir', type=str, required=True)
+    parser.add_argument('--tensorboard_dir', type=str, default=None)
     
-    # Model hyperparameters
-    parser.add_argument('--patch_percentage', type=float, default=0.25, help="Percentage of patches to select (e.g., 0.25 for 25%).")
-    parser.add_argument('--img_size', type=int, default=256, help="Image size to train the model on.")
+    # Model parameters
+    parser.add_argument('--patch_percentage', type=float, default=0.3)
+    parser.add_argument('--img_size', type=int, default=64)
+    parser.add_argument('--patch_size', type=int, default=4)
+    parser.add_argument('--vit_model_name', type=str, 
+                       default='vit_tiny_patch16_224.augreg_in21k')
     
-    # Training hyperparameters
-    parser.add_argument('--epochs', type=int, default=50, help="Number of training epochs.")
-    parser.add_argument('--batch_size', type=int, default=32, help="Batch size for training and validation.")
-    parser.add_argument('--learning_rate', type=float, default=1e-4, help="Initial learning rate.")
-    parser.add_argument('--num_workers', type=int, default=4, help="Number of worker processes for data loading.")
-
+    # Training parameters
+    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--learning_rate', type=float, default=1e-5)
+    parser.add_argument('--weight_decay', type=float, default=0.1)
+    parser.add_argument('--patience', type=int, default=20)
+    parser.add_argument('--num_workers', type=int, default=4)
+    
     args = parser.parse_args()
     main(args)

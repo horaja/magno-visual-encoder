@@ -3,12 +3,12 @@
 *.pth
 __pycache__/
 
+mamba*
+
 data/
 
 checkpoints/
 
-mamba*
+TODO.md
 
 logs/
-
-TODO.md
