@@ -9,6 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms
 from tqdm import tqdm
 import time
+import random
 
 from model import SelectiveMagnoViT
 from dataset import ImageNetteDataset
@@ -50,6 +51,30 @@ class Trainer:
         self.patience_counter = 0
         self.epoch = 0
         
+        # Dynamic patch percentage settings
+        self.use_dynamic_patches = config.get('use_dynamic_patches', False)
+        self.dynamic_patch_range = config.get('dynamic_patch_range', [0.3, 1.0])
+        self.dynamic_patch_schedule = config.get('dynamic_patch_schedule', 'random')  # 'random' or 'curriculum'
+        
+    def get_patch_percentage_for_epoch(self):
+        """Get patch percentage for current epoch based on schedule."""
+        if not self.use_dynamic_patches:
+            return self.model.patch_percentage
+        
+        if self.dynamic_patch_schedule == 'curriculum':
+            # Start with 100% and gradually decrease
+            progress = self.epoch / self.config['epochs']
+            min_pct, max_pct = self.dynamic_patch_range
+            return max_pct - (max_pct - min_pct) * progress
+        
+        elif self.dynamic_patch_schedule == 'random':
+            # Random sampling between min and max
+            min_pct, max_pct = self.dynamic_patch_range
+            return random.uniform(min_pct, max_pct)
+        
+        else:
+            return self.model.patch_percentage
+    
     def train_epoch(self):
         """Train for one epoch."""
         self.model.train()
@@ -57,7 +82,15 @@ class Trainer:
         correct = 0
         total = 0
         
-        progress_bar = tqdm(self.train_loader, desc=f"Epoch {self.epoch+1} [Train]")
+        # Get patch percentage for this epoch
+        epoch_patch_percentage = self.get_patch_percentage_for_epoch()
+        self.model.set_patch_percentage(epoch_patch_percentage)
+        
+        progress_bar = tqdm(
+            self.train_loader, 
+            desc=f"Epoch {self.epoch+1} [Train] PP={epoch_patch_percentage:.1%}"
+        )
+        
         for batch in progress_bar:
             magno_images = batch['magno_image'].to(self.device)
             line_drawings = batch['line_drawing'].to(self.device)
@@ -79,14 +112,24 @@ class Trainer:
         train_loss = running_loss / total
         train_accuracy = correct / total
         
-        return train_loss, train_accuracy
+        return train_loss, train_accuracy, epoch_patch_percentage
     
-    def validate(self):
-        """Validate the model."""
+    def validate(self, patch_percentage=None):
+        """
+        Validate the model.
+        
+        Args:
+            patch_percentage (float, optional): Override patch percentage for validation.
+        """
         self.model.eval()
         running_loss = 0.0
         correct = 0
         total = 0
+        
+        # Use specified percentage or model's current percentage
+        if patch_percentage is not None:
+            original_percentage = self.model.patch_percentage
+            self.model.set_patch_percentage(patch_percentage)
         
         with torch.no_grad():
             progress_bar = tqdm(self.val_loader, desc=f"Epoch {self.epoch+1} [Val]")
@@ -103,10 +146,26 @@ class Trainer:
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
         
+        # Restore original percentage if changed
+        if patch_percentage is not None:
+            self.model.set_patch_percentage(original_percentage)
+        
         val_loss = running_loss / total
         val_accuracy = correct / total
         
         return val_loss, val_accuracy
+    
+    def validate_multiple_percentages(self):
+        """Validate at multiple patch percentages."""
+        test_percentages = [0.3, 0.5, 0.7, 1.0]
+        results = {}
+        
+        for pct in test_percentages:
+            val_loss, val_acc = self.validate(patch_percentage=pct)
+            results[pct] = {'loss': val_loss, 'accuracy': val_acc}
+            print(f"    Val @ {pct:.0%} patches: Acc={val_acc:.4f}, Loss={val_loss:.4f}")
+        
+        return results
     
     def save_checkpoint(self, path, is_best=False):
         """Save model checkpoint."""
@@ -116,11 +175,13 @@ class Trainer:
             'optimizer_state_dict': self.optimizer.state_dict(),
             'scheduler_state_dict': self.scheduler.state_dict(),
             'best_val_accuracy': self.best_val_accuracy,
-            'config': self.config
+            'config': self.config,
+            'model_info': self.model.get_model_info()
         }
         torch.save(checkpoint, path)
         
         if is_best:
+            # Save just the model state dict for easy loading
             best_path = path.replace('.pth', '_best.pth')
             torch.save(self.model.state_dict(), best_path)
     
@@ -131,6 +192,8 @@ class Trainer:
         print("="*60)
         for key, value in self.config.items():
             print(f"  {key}: {value}")
+        print("="*60)
+        print(f"Model Info: {self.model.get_model_info()}")
         print("="*60 + "\n")
         
         for epoch in range(self.config['epochs']):
@@ -138,10 +201,15 @@ class Trainer:
             start_time = time.time()
             
             # Train
-            train_loss, train_acc = self.train_epoch()
+            train_loss, train_acc, train_patch_pct = self.train_epoch()
             
-            # Validate
+            # Validate at training patch percentage
             val_loss, val_acc = self.validate()
+            
+            # Optionally validate at multiple percentages
+            if epoch % 10 == 0 and self.config.get('validate_multiple_percentages', False):
+                print("  Validating at multiple patch percentages:")
+                multi_val_results = self.validate_multiple_percentages()
             
             # Update learning rate
             self.scheduler.step()
@@ -154,11 +222,12 @@ class Trainer:
                 self.writer.add_scalar('Accuracy/val', val_acc, epoch)
                 self.writer.add_scalar('Learning_rate', 
                                       self.optimizer.param_groups[0]['lr'], epoch)
+                self.writer.add_scalar('Patch_percentage/train', train_patch_pct, epoch)
             
             # Print progress
             epoch_time = time.time() - start_time
             print(f"Epoch {epoch+1}/{self.config['epochs']} "
-                  f"| Train Loss: {train_loss:.4f}, Acc: {train_acc:.4f} "
+                  f"| Train Loss: {train_loss:.4f}, Acc: {train_acc:.4f} @ {train_patch_pct:.1%} patches "
                   f"| Val Loss: {val_loss:.4f}, Acc: {val_acc:.4f} "
                   f"| Time: {epoch_time:.2f}s")
             
@@ -177,6 +246,14 @@ class Trainer:
                 torch.save(self.model.state_dict(), best_path)
             else:
                 self.patience_counter += 1
+            
+            # # Save periodic checkpoint
+            # if epoch % 10 == 0:
+            #     checkpoint_path = os.path.join(
+            #         self.config['output_dir'],
+            #         f"checkpoint_epoch{epoch}_pp{self.config['patch_percentage']}.pth"
+            #     )
+            #     self.save_checkpoint(checkpoint_path, is_best)
                 
             # Early stopping
             if self.patience_counter >= self.config['patience']:
@@ -280,6 +357,10 @@ def main(args):
         'num_classes': num_classes,
         'output_dir': args.output_dir,
         'tensorboard_dir': args.tensorboard_dir,
+        'use_dynamic_patches': args.use_dynamic_patches,
+        'dynamic_patch_range': args.dynamic_patch_range,
+        'dynamic_patch_schedule': args.dynamic_patch_schedule,
+        'validate_multiple_percentages': args.validate_multiple_percentages,
         'timestamp': datetime.now().isoformat()
     }
     
@@ -319,6 +400,17 @@ if __name__ == '__main__':
     parser.add_argument('--weight_decay', type=float, default=0.1)
     parser.add_argument('--patience', type=int, default=20)
     parser.add_argument('--num_workers', type=int, default=4)
+    
+    # Dynamic patch percentage settings
+    parser.add_argument('--use_dynamic_patches', action='store_true',
+                       help='Use dynamic patch percentages during training')
+    parser.add_argument('--dynamic_patch_range', type=float, nargs=2, default=[0.3, 1.0],
+                       help='Min and max patch percentages for dynamic training')
+    parser.add_argument('--dynamic_patch_schedule', type=str, default='random',
+                       choices=['random', 'curriculum'],
+                       help='Schedule for dynamic patch percentage')
+    parser.add_argument('--validate_multiple_percentages', action='store_true',
+                       help='Validate at multiple patch percentages during training')
     
     args = parser.parse_args()
     main(args)

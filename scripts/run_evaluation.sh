@@ -27,6 +27,10 @@ while [[ $# -gt 0 ]]; do
             export VISUALIZE="true"
             shift
             ;;
+        --ablation_study)
+            export ABLATION_STUDY="true"
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
             exit 1
@@ -48,6 +52,7 @@ echo "=========================================="
 # Create output directories
 mkdir -p ${RESULTS_PLOTS_DIR}
 mkdir -p ${RESULTS_LOGS_DIR}
+mkdir -= ${RESULTS_ABLATION_DIR}
 
 # Setup environment
 eval "$(mamba shell hook --shell bash)"
@@ -60,17 +65,31 @@ TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 RESULTS_FILE="${RESULTS_LOGS_DIR}/eval_pp${PATCH_PERCENTAGE}_${TIMESTAMP}.txt"
 
 echo "Running evaluation..."
-python src/evaluate.py \
-    --magno_dir "${MAGNO_DATA_DIR}" \
-    --lines_dir "${LINES_DATA_DIR}" \
-    --model_dir "${MODEL_CHECKPOINT_DIR}" \
-    --plots_dir "${RESULTS_PLOTS_DIR}" \
-    --results_file "${RESULTS_FILE}" \
-    --patch_percentage ${PATCH_PERCENTAGE} \
-    --img_size ${IMG_SIZE} \
-    --patch_size ${PATCH_SIZE} \
-    --num_workers ${NUM_WORKERS} \
-    --visualize ${VISUALIZE:-false}
+
+# Build the command
+CMD="python src/evaluate.py"
+CMD="$CMD --magno_dir '${MAGNO_DATA_DIR}'"
+CMD="$CMD --lines_dir '${LINES_DATA_DIR}'"
+CMD="$CMD --model_dir '${MODEL_CHECKPOINT_DIR}'"
+CMD="$CMD --plots_dir '${RESULTS_PLOTS_DIR}'"
+CMD="$CMD --output_dir '${RESULTS_ABLATION_DIR}'"
+CMD="$CMD --results_file '${RESULTS_FILE}'"
+CMD="$CMD --patch_percentage ${PATCH_PERCENTAGE}"
+CMD="$CMD --img_size ${IMG_SIZE}"
+CMD="$CMD --patch_size ${PATCH_SIZE}"
+CMD="$CMD --num_workers ${NUM_WORKERS}"
+
+# Add optional flags based on environment variables
+if [ "${VISUALIZE}" = "true" ]; then
+    CMD="$CMD --visualize true"
+fi
+
+if [ "${ABLATION_STUDY}" = "true" ]; then
+    CMD="$CMD --ablation_study"
+fi
+
+# Execute the command
+eval $CMD
 
 echo ""
 echo "Results saved to: ${RESULTS_FILE}"

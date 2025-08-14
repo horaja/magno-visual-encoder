@@ -41,30 +41,36 @@ class PatchImportanceScorer(nn.Module):
         
         return scores
 
-class TopKPatchSelector(nn.Module):
+
+class FlexiblePatchSelector(nn.Module):
     """
-    Module 3 & 4: Selects top-K patches from the Magno image based on scores
-                  and combines them with their original positional embeddings.
+    Flexible patch selector supporting multiple selection strategies:
+    - 'top_k': Select top-k patches based on scores
+    - 'random': Randomly select patches
+    - 'probabilistic': Sample patches based on score distribution
+    - 'threshold': Select patches above a threshold
     """
-    def __init__(self, patch_percentage):
+    def __init__(self, patch_percentage, selection_strategy='top_k'):
         """
         Args:
             patch_percentage (float): The fraction of patches to select (e.g., 0.25 for 25%).
+            selection_strategy (str): Strategy for patch selection.
         """
         super().__init__()
         if not (0 < patch_percentage <= 1.0):
             raise ValueError("patch_percentage must be between 0 and 1.")
         self.patch_percentage = patch_percentage
+        self.selection_strategy = selection_strategy
 
-    def forward(self, magno_patches, vit_positional_embedding, scores):
+    def forward(self, magno_patches, vit_positional_embedding, scores=None):
         """
         Args:
             magno_patches (torch.Tensor): All patches from the Magno image,
                                           shape (B, num_patches, patch_dim).
             vit_positional_embedding (torch.Tensor): The ViT's standard positional
                                                      embeddings, shape (1, num_patches + 1, embed_dim).
-            scores (torch.Tensor): The density scores from the PatchImportanceScorer,
-                                   shape (B, num_patches).
+            scores (torch.Tensor, optional): The density scores from the PatchImportanceScorer,
+                                            shape (B, num_patches). Not used for random selection.
         
         Returns:
             torch.Tensor: A sparse sequence of selected patch embeddings with their
@@ -73,27 +79,111 @@ class TopKPatchSelector(nn.Module):
         B, N, D = magno_patches.shape
         k = int(N * self.patch_percentage)
 
-        # Get the indices of the top-k scores for each image in the batch
-        # topk returns (values, indices)
-        _, top_k_indices = torch.topk(scores, k=k, dim=1) # (B, k)
+        # Get indices based on selection strategy
+        if self.selection_strategy == 'random':
+            # Random selection (ignore scores)
+            indices = self._random_selection(B, N, k)
+            
+        elif self.selection_strategy == 'top_k':
+            # Original top-k selection
+            if scores is None:
+                raise ValueError("Scores required for top_k selection")
+            _, indices = torch.topk(scores, k=k, dim=1)
+            
+        elif self.selection_strategy == 'probabilistic':
+            # Probabilistic sampling based on score distribution
+            if scores is None:
+                raise ValueError("Scores required for probabilistic selection")
+            indices = self._probabilistic_selection(scores, k)
+            
+        elif self.selection_strategy == 'threshold':
+            # Threshold-based selection with top-k fallback
+            if scores is None:
+                raise ValueError("Scores required for threshold selection")
+            indices = self._threshold_selection(scores, k)
+            
+        else:
+            raise ValueError(f"Unknown selection strategy: {self.selection_strategy}")
 
-        # Gather the top-k patches using the indices
-        # We need to expand indices to match the dimension of the patches
-        top_k_indices_expanded = top_k_indices.unsqueeze(-1).expand(-1, -1, D)
-        selected_patches = torch.gather(magno_patches, 1, top_k_indices_expanded)
+        # Gather the selected patches using the indices
+        indices_expanded = indices.unsqueeze(-1).expand(-1, -1, D)
+        selected_patches = torch.gather(magno_patches, 1, indices_expanded)
 
-        # --- Positional Embedding ---
-        # The ViT positional embedding includes a token for the [CLS] token,
-        # so we skip it by indexing from [:, 1:, :]
-        pos_embed_patches = vit_positional_embedding[:, 1:, :] # (1, num_patches, embed_dim)
-        
-        # Gather the positional embeddings corresponding to the selected patches
-        # We need to expand indices for this gathering operation as well
-        pos_embed_indices = top_k_indices.unsqueeze(-1).expand(-1, -1, pos_embed_patches.size(-1))
+        # Get positional embeddings for selected patches
+        pos_embed_patches = vit_positional_embedding[:, 1:, :]  # Skip CLS token
+        pos_embed_indices = indices.unsqueeze(-1).expand(-1, -1, pos_embed_patches.size(-1))
         selected_pos_embed = torch.gather(pos_embed_patches.expand(B, -1, -1), 1, pos_embed_indices)
 
-        # Add the positional embeddings to the selected patches
+        # Add positional embeddings to selected patches
         return selected_patches + selected_pos_embed
+
+    def _random_selection(self, batch_size, num_patches, k):
+        """Randomly select k patches for each sample in batch."""
+        indices = torch.zeros(batch_size, k, dtype=torch.long, device='cuda' if torch.cuda.is_available() else 'cpu')
+        for i in range(batch_size):
+            indices[i] = torch.randperm(num_patches)[:k]
+        return indices
+
+    def _probabilistic_selection(self, scores, k):
+        """Sample patches based on score distribution."""
+        B = scores.shape[0]
+        
+        # Convert scores to probabilities using softmax
+        # Add temperature parameter for controlling distribution sharpness
+        temperature = 0.5  # Lower = sharper distribution, higher = more uniform
+        probs = F.softmax(scores / temperature, dim=1)
+        
+        # Sample k patches without replacement
+        indices = torch.zeros(B, k, dtype=torch.long, device=scores.device)
+        for i in range(B):
+            # Multinomial sampling without replacement
+            indices[i] = torch.multinomial(probs[i], k, replacement=False)
+        
+        return indices
+
+    def _threshold_selection(self, scores, k):
+        """Select patches above adaptive threshold, with top-k fallback."""
+        B, N = scores.shape
+        indices_list = []
+        
+        for i in range(B):
+            # Compute adaptive threshold (e.g., mean + 0.5 * std)
+            score_mean = scores[i].mean()
+            score_std = scores[i].std()
+            threshold = score_mean + 0.5 * score_std
+            
+            # Get patches above threshold
+            above_threshold = scores[i] > threshold
+            above_indices = torch.where(above_threshold)[0]
+            
+            if len(above_indices) >= k:
+                # If too many patches above threshold, take top-k
+                _, top_indices = torch.topk(scores[i], k=k)
+                indices_list.append(top_indices)
+            elif len(above_indices) > 0:
+                # If some but not enough patches above threshold, 
+                # take all above threshold + top remaining
+                remaining_k = k - len(above_indices)
+                mask = torch.ones(N, dtype=torch.bool, device=scores.device)
+                mask[above_indices] = False
+                remaining_scores = scores[i].clone()
+                remaining_scores[~mask] = -float('inf')
+                _, remaining_indices = torch.topk(remaining_scores, k=remaining_k)
+                combined = torch.cat([above_indices, remaining_indices])
+                indices_list.append(combined[:k])
+            else:
+                # If no patches above threshold, fall back to top-k
+                _, top_indices = torch.topk(scores[i], k=k)
+                indices_list.append(top_indices)
+        
+        return torch.stack(indices_list)
+
+
+# Keep the old TopKPatchSelector for backward compatibility
+class TopKPatchSelector(FlexiblePatchSelector):
+    """Legacy class for backward compatibility."""
+    def __init__(self, patch_percentage):
+        super().__init__(patch_percentage, selection_strategy='top_k')
 
 
 class SelectiveMagnoViT(nn.Module):
@@ -108,6 +198,7 @@ class SelectiveMagnoViT(nn.Module):
         patch_size (int): Size of each patch.
         vit_model_name (str): Name of the pre-trained ViT model from timm.
         embed_dim (int, optional): Embedding dimension for custom ViT.
+        selection_strategy (str): Strategy for patch selection ('top_k', 'random', 'probabilistic', 'threshold').
     """
     
     def __init__(self, 
@@ -116,7 +207,8 @@ class SelectiveMagnoViT(nn.Module):
                  img_size=64,
                  patch_size=4,
                  vit_model_name='vit_tiny_patch16_224.augreg_in21k',
-                 embed_dim=None):
+                 embed_dim=None,
+                 selection_strategy='top_k'):
         super().__init__()
         
         # Validate inputs
@@ -130,6 +222,7 @@ class SelectiveMagnoViT(nn.Module):
         self.num_classes = num_classes
         self.img_size = img_size
         self.patch_size = patch_size
+        self.selection_strategy = selection_strategy
         
         # Load ViT backbone
         self.vit = timm.create_model(vit_model_name, pretrained=True)
@@ -158,7 +251,10 @@ class SelectiveMagnoViT(nn.Module):
         
         # Initialize custom modules
         self.scorer = PatchImportanceScorer(patch_size=patch_size)
-        self.selector = TopKPatchSelector(patch_percentage=patch_percentage)
+        self.selector = FlexiblePatchSelector(
+            patch_percentage=patch_percentage,
+            selection_strategy=selection_strategy
+        )
         
         # Store metadata
         self.num_patches = num_patches
@@ -175,13 +271,13 @@ class SelectiveMagnoViT(nn.Module):
         Returns:
             torch.Tensor: Classification logits (B, num_classes).
         """
-        # Score patches based on line drawing
-        patch_scores = self.scorer(line_drawing)
+        # Score patches based on line drawing (even for random, we compute for analysis)
+        patch_scores = self.scorer(line_drawing) if line_drawing is not None else None
         
         # Extract all patches from Magno image
         all_patches = self.vit.patch_embed(magno_image)
         
-        # Select top-k patches with positional embeddings
+        # Select patches based on strategy
         selected_patches = self.selector(
             all_patches,
             self.vit.pos_embed,
@@ -213,17 +309,43 @@ class SelectiveMagnoViT(nn.Module):
         
         return logits
     
-    def get_selected_patches_indices(self, line_drawing):
-        """
-        Get indices of selected patches for visualization.
+    def set_patch_percentage(self, new_percentage):
+        """Dynamically adjust patch percentage."""
+        if not 0 < new_percentage <= 1.0:
+            raise ValueError(f"patch_percentage must be in (0, 1], got {new_percentage}")
         
-        Args:
-            line_drawing (torch.Tensor): Line drawing (B, 1, H, W).
+        self.patch_percentage = new_percentage
+        self.selector.patch_percentage = new_percentage
+        return self
+    
+    def set_selection_strategy(self, strategy):
+        """Change the patch selection strategy."""
+        valid_strategies = ['top_k', 'random', 'probabilistic', 'threshold']
+        if strategy not in valid_strategies:
+            raise ValueError(f"Strategy must be one of {valid_strategies}, got {strategy}")
         
-        Returns:
-            torch.Tensor: Indices of selected patches (B, k).
-        """
-        patch_scores = self.scorer(line_drawing)
-        k = int(patch_scores.shape[1] * self.patch_percentage)
-        _, indices = torch.topk(patch_scores, k=k, dim=1)
-        return indices
+        self.selection_strategy = strategy
+        self.selector.selection_strategy = strategy
+        return self
+    
+    @torch.no_grad()
+    def get_selected_patches_indices(self, line_drawing, patch_percentage=None):
+        """Get indices of selected patches for visualization."""
+        if self.selection_strategy == 'random':
+            # For random, just return random indices
+            B = line_drawing.shape[0]
+            N = self.num_patches
+            k = int(N * (patch_percentage or self.patch_percentage))
+            return torch.stack([torch.randperm(N)[:k] for _ in range(B)])
+        else:
+            patch_scores = self.scorer(line_drawing)
+            k = int(patch_scores.shape[1] * (patch_percentage or self.patch_percentage))
+            
+            if self.selection_strategy == 'top_k':
+                _, indices = torch.topk(patch_scores, k=k, dim=1)
+            elif self.selection_strategy == 'probabilistic':
+                indices = self.selector._probabilistic_selection(patch_scores, k)
+            elif self.selection_strategy == 'threshold':
+                indices = self.selector._threshold_selection(patch_scores, k)
+            
+            return indices
