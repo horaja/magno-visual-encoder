@@ -20,7 +20,7 @@ export LINES_DATA_DIR="${PREPROCESSED_DATA_ROOT}/line_drawings"
 # ============================================
 export IMG_SIZE=64
 export PATCH_SIZE=4
-export PATCH_PERCENTAGE=0.75
+export PATCH_PERCENTAGE=0.45
 export NUM_CLASSES=10
 export VIT_MODEL_NAME="vit_tiny_patch16_224.augreg_in21k"
 
@@ -47,7 +47,7 @@ export MODEL_CHECKPOINT_DIR="models/checkpoints"
 export RESULTS_ROOT_DIR="results"
 export RESULTS_PLOTS_DIR="${RESULTS_ROOT_DIR}/plots"
 export RESULTS_LOGS_DIR="${RESULTS_ROOT_DIR}/logs"
-export TENSORBOARD_LOG_DIR="logs/tensorboard"
+export TENSORBOARD_LOG_DIR="logs/tensorboard/job_${SLURM_JOB_ID}"
 
 # ============================================
 # SLURM SETTINGS
