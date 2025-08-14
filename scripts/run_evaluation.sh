@@ -52,7 +52,7 @@ echo "=========================================="
 # Create output directories
 mkdir -p ${RESULTS_PLOTS_DIR}
 mkdir -p ${RESULTS_LOGS_DIR}
-mkdir -= ${RESULTS_ABLATION_DIR}
+mkdir -p ${RESULTS_ABLATION_DIR}
 
 # Setup environment
 eval "$(mamba shell hook --shell bash)"

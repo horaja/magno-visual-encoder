@@ -47,7 +47,7 @@ export MODEL_CHECKPOINT_DIR="models/checkpoints"
 export RESULTS_ROOT_DIR="results"
 export RESULTS_PLOTS_DIR="${RESULTS_ROOT_DIR}/plots"
 export RESULTS_LOGS_DIR="${RESULTS_ROOT_DIR}/logs"
-export RESULTS_ABLATION_DIR ="${RESULTS_ROOT_DIR}/ablation"
+export RESULTS_ABLATION_DIR="${RESULTS_ROOT_DIR}/ablation"
 export TENSORBOARD_LOG_DIR="logs/tensorboard/job_${SLURM_JOB_ID}"
 
 # ============================================
