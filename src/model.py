@@ -348,4 +348,22 @@ class SelectiveMagnoViT(nn.Module):
             elif self.selection_strategy == 'threshold':
                 indices = self.selector._threshold_selection(patch_scores, k)
             
-            return indices
+            return indices     
+        
+    def get_model_info(self):
+        """
+        Get model configuration information.
+        
+        Returns:
+            dict: Model configuration details.
+        """
+        return {
+            'patch_percentage': self.patch_percentage,
+            'num_classes': self.num_classes,
+            'img_size': self.img_size,
+            'patch_size': self.patch_size,
+            'num_patches': self.num_patches,
+            'embed_dim': self.embed_dim,
+            'total_params': sum(p.numel() for p in self.parameters()),
+            'trainable_params': sum(p.numel() for p in self.parameters() if p.requires_grad)
+        }
