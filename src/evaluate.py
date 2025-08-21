@@ -326,18 +326,15 @@ class ModelEvaluator:
 class AblationStudyEvaluator:
     """Conducts ablation study on patch selection strategies."""
     
-    def __init__(self, model_path, device, val_loader, class_names, 
+    def __init__(self, model_dir, device, val_loader, class_names, 
                  img_size=64, patch_size=4, num_classes=10):
-        self.model_path = model_path
+        self.model_dir = model_dir  # Changed from model_path to model_dir
         self.device = device
         self.val_loader = val_loader
         self.class_names = class_names
         self.img_size = img_size
         self.patch_size = patch_size
         self.num_classes = num_classes
-        
-        # Load the base model weights once
-        self.base_weights = torch.load(model_path, map_location=device)
         
         # Selection strategies to test
         self.strategies = {
@@ -347,9 +344,54 @@ class AblationStudyEvaluator:
         }
         
         self.results = {}
+        self.missing_checkpoints = []
     
-    def create_model_with_strategy(self, strategy, patch_percentage):
-        """Create a model with specific selection strategy and patch percentage."""
+    def load_checkpoint_for_percentage(self, patch_percentage):
+        """
+        Load the checkpoint trained at a specific patch percentage.
+        
+        Args:
+            patch_percentage (float): The patch percentage to load (e.g., 0.3)
+        
+        Returns:
+            dict or None: Model weights if found, None otherwise
+        """
+        # Try different naming patterns for the checkpoint
+        possible_paths = [
+            os.path.join(self.model_dir, f"best_model_pp{patch_percentage}.pth"),
+            os.path.join(self.model_dir, f"best_model_pp{patch_percentage:.1f}.pth"),
+            os.path.join(self.model_dir, f"best_model_pp{int(patch_percentage*100)}.pth"),
+        ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                print(f"  Loading checkpoint: {path}")
+                return torch.load(path, map_location=self.device)
+        
+        # If not found, track it
+        self.missing_checkpoints.append(patch_percentage)
+        print(f"  ⚠️  No checkpoint found for {patch_percentage:.1%} patches")
+        return None
+    
+    def create_model_with_checkpoint(self, strategy, patch_percentage):
+        """
+        Create a model with specific selection strategy and load the checkpoint
+        trained at that patch percentage.
+        
+        Args:
+            strategy (str): Selection strategy to use
+            patch_percentage (float): Patch percentage for both model config and checkpoint
+        
+        Returns:
+            nn.Module or None: Configured model or None if checkpoint not found
+        """
+        # Load checkpoint for this specific patch percentage
+        checkpoint_weights = self.load_checkpoint_for_percentage(patch_percentage)
+        
+        if checkpoint_weights is None:
+            return None
+        
+        # Create model with the same patch percentage it was trained with
         model = SelectiveMagnoViT(
             patch_percentage=patch_percentage,
             num_classes=self.num_classes,
@@ -358,15 +400,19 @@ class AblationStudyEvaluator:
             selection_strategy=strategy
         ).to(self.device)
         
-        # Load the pre-trained weights
-        model.load_state_dict(self.base_weights, strict=False)
+        # Load the weights
+        model.load_state_dict(checkpoint_weights, strict=False)
         model.eval()
         
         return model
     
     def evaluate_strategy_at_percentage(self, strategy, patch_percentage):
         """Evaluate a specific strategy at a given patch percentage."""
-        model = self.create_model_with_strategy(strategy, patch_percentage)
+        model = self.create_model_with_checkpoint(strategy, patch_percentage)
+        
+        if model is None:
+            print(f"    Skipping {strategy} @ {patch_percentage:.1%} - no checkpoint")
+            return None
         
         correct = 0
         total = 0
@@ -392,23 +438,58 @@ class AblationStudyEvaluator:
         """Run complete ablation study across strategies and percentages."""
         print("\n" + "="*60)
         print("ABLATION STUDY: Patch Selection Strategies")
+        print("Using Individual Checkpoints per Patch Percentage")
         print("="*60)
         
         # Initialize results dictionary
         for strategy in self.strategies.keys():
             self.results[strategy] = {
-                'percentages': patch_percentages,
+                'percentages': [],
                 'accuracies': []
             }
         
-        # Test each strategy at each percentage
+        # Track which percentages have available checkpoints
+        available_percentages = []
+        
+        # First, check which checkpoints are available
+        print("\nChecking available checkpoints...")
+        for pct in patch_percentages:
+            checkpoint = self.load_checkpoint_for_percentage(pct)
+            if checkpoint is not None:
+                available_percentages.append(pct)
+        
+        if not available_percentages:
+            print("ERROR: No checkpoints found!")
+            return self.results
+        
+        print(f"\nFound checkpoints for: {[f'{p:.1%}' for p in available_percentages]}")
+        
+        if self.missing_checkpoints:
+            print(f"Missing checkpoints for: {[f'{p:.1%}' for p in self.missing_checkpoints]}")
+            print("Note: Only evaluating available checkpoints")
+        
+        # Test each strategy at each available percentage
         for strategy in self.strategies.keys():
             print(f"\nEvaluating {self.strategies[strategy]}...")
             
             for pct in patch_percentages:
-                accuracy = self.evaluate_strategy_at_percentage(strategy, pct)
-                self.results[strategy]['accuracies'].append(accuracy)
-                print(f"  {pct:.1%} patches: {accuracy:.4f}")
+                if pct in available_percentages:
+                    accuracy = self.evaluate_strategy_at_percentage(strategy, pct)
+                    if accuracy is not None:
+                        self.results[strategy]['percentages'].append(pct)
+                        self.results[strategy]['accuracies'].append(accuracy)
+                        print(f"  {pct:.1%} patches: {accuracy:.4f}")
+        
+        # Report summary
+        if self.missing_checkpoints:
+            print("\n" + "="*60)
+            print("MISSING CHECKPOINTS SUMMARY")
+            print("="*60)
+            print("The following patch percentages need to be trained:")
+            for pct in self.missing_checkpoints:
+                print(f"  - {pct:.1%}: Run training with --patch-percentage {pct}")
+            print("\nTo train missing checkpoints, use:")
+            print("  sbatch scripts/run_training.sh --patch-percentage <value>")
         
         return self.results
     
@@ -911,7 +992,7 @@ def ablation_study(args):
     print(f"Using device: {device}")
     
     # Create output directory
-    output_dir = args.plots_dir if args.plots_dir else args.output_dir
+    output_dir = args.output_dir or args.plots_dir
     os.makedirs(output_dir, exist_ok=True)
     
     # Load data
@@ -936,18 +1017,12 @@ def ablation_study(args):
         pin_memory=True
     )
     
-    # Get model path
-    if args.model_path:
-        model_path = args.model_path
-    else:
-        model_path = os.path.join(args.model_dir, "best_model_pp1.0.pth")
-    
     # Define patch percentages to test
     patch_percentages = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     
-    # Initialize evaluator
+    # Initialize evaluator with model directory instead of single model path
     evaluator = AblationStudyEvaluator(
-        model_path=model_path,
+        model_dir=args.model_dir,  # Changed from model_path
         device=device,
         val_loader=val_loader,
         class_names=val_dataset.class_names,
@@ -959,15 +1034,19 @@ def ablation_study(args):
     # Run ablation study
     results = evaluator.run_ablation_study(patch_percentages)
     
-    # Analyze optimal percentages
-    evaluator.analyze_optimal_percentages(args.output_dir or output_dir)
-    
-    # Create visualizations
-    print("\nGenerating visualizations...")
-    evaluator.plot_ablation_results(output_dir)
-    
-    # Save results
-    evaluator.save_results(output_dir)
+    # Only create visualizations if we have results
+    if any(len(r['accuracies']) > 0 for r in results.values()):
+        # Analyze optimal percentages
+        evaluator.analyze_optimal_percentages(output_dir)
+        
+        # Create visualizations
+        print("\nGenerating visualizations...")
+        evaluator.plot_ablation_results(output_dir)
+        
+        # Save results
+        evaluator.save_results(output_dir)
+    else:
+        print("\nNo results to visualize - please train the required checkpoints first")
 
 
 def main(args):
