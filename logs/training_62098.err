@@ -1,2 +1,0 @@
-/home/horaja/.conda/envs/drawings/lib/python3.12/site-packages/timm/models/_factory.py:138: UserWarning: Mapping deprecated model name vit_base_patch16_224_in21k to current vit_base_patch16_224.augreg_in21k.
-  model = create_fn(
