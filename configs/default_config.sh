@@ -20,7 +20,7 @@ export LINES_DATA_DIR="${PREPROCESSED_DATA_ROOT}/line_drawings"
 # ============================================
 export IMG_SIZE=64
 export PATCH_SIZE=4
-export PATCH_PERCENTAGE=0.45
+export PATCH_PERCENTAGE=0.4
 export NUM_CLASSES=10
 export VIT_MODEL_NAME="vit_tiny_patch16_224.augreg_in21k"
 
