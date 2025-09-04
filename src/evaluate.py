@@ -340,7 +340,7 @@ class AblationStudyEvaluator:
         self.strategies = {
             'random': 'Random Selection',
             'top_k': 'Top-K (Line-Guided)',
-            'probabilistic': 'Probabilistic Sampling'
+            'spatial_threshold': 'Spatial-Threshold (CoG-Biased)' 
         }
         
         self.results = {}
@@ -501,13 +501,13 @@ class AblationStudyEvaluator:
         colors = {
             'random': '#FF6B6B',
             'top_k': '#4ECDC4',
-            'probabilistic': '#45B7D1'
+            'spatial_threshold': '#45B7D1'
         }
         
         markers = {
             'random': 'o',
             'top_k': 's',
-            'probabilistic': '^'
+            'spatial_threshold': '^'
         }
         
         # Plot each strategy
@@ -543,7 +543,7 @@ class AblationStudyEvaluator:
         """Save ablation study results."""
         results_dict = {
             'timestamp': datetime.now().isoformat(),
-            'model_path': self.model_path,
+            'model_dir': self.model_dir,
             'strategies_tested': list(self.strategies.keys()),
             'results': self.results
         }
@@ -604,7 +604,13 @@ class AblationStudyEvaluator:
         for i in range(len(x)):
             p = np.array([x[i], y[i]])
             # Distance from point to line
-            distance = np.abs(np.cross(p2-p1, p1-p)) / np.linalg.norm(p2-p1)
+            # Convert 2D points to 3D by adding a z=0 component
+            p1_3d = np.append(p1, 0)
+            p2_3d = np.append(p2, 0)
+            p_3d = np.append(p, 0)
+
+            # Perform the cross product in 3D
+            distance = np.linalg.norm(np.cross(p2_3d - p1_3d, p1_3d - p_3d)) / np.linalg.norm(p2_3d - p1_3d)
             distances.append(distance)
         
         # Knee point is the one with maximum distance

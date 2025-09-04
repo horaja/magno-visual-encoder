@@ -11,15 +11,15 @@ Strategy: Top-K (Line-Guided)
 
 RANDOM SELECTION
 ----------------------------------------
-Knee Point (Optimal Trade-off): 50.0% (Accuracy: 0.5462)
+Knee Point (Optimal Trade-off): 60.0% (Accuracy: 0.5763)
 
 Accuracy Thresholds:
-  90%_of_max: 60.0% patches (Acc: 0.5633)
-  95%_of_max: 90.0% patches (Acc: 0.6229)
-  98%_of_max: 90.0% patches (Acc: 0.6229)
-  99%_of_max: 90.0% patches (Acc: 0.6229)
+  90%_of_max: 60.0% patches (Acc: 0.5763)
+  95%_of_max: 90.0% patches (Acc: 0.6176)
+  98%_of_max: 90.0% patches (Acc: 0.6176)
+  99%_of_max: 90.0% patches (Acc: 0.6176)
 
-Most Efficient Point: 10.0% (Efficiency Ratio: 6.02)
+Most Efficient Point: 10.0% (Efficiency Ratio: 5.98)
 
 TOP-K (LINE-GUIDED)
 ----------------------------------------
@@ -33,23 +33,23 @@ Accuracy Thresholds:
 
 Most Efficient Point: 10.0% (Efficiency Ratio: 6.66)
 
-PROBABILISTIC SAMPLING
+SPATIAL-THRESHOLD (COG-BIASED)
 ----------------------------------------
-Knee Point (Optimal Trade-off): 50.0% (Accuracy: 0.5694)
+Knee Point (Optimal Trade-off): 40.0% (Accuracy: 0.5699)
 
 Accuracy Thresholds:
-  90%_of_max: 50.0% patches (Acc: 0.5694)
-  95%_of_max: 90.0% patches (Acc: 0.6245)
+  90%_of_max: 40.0% patches (Acc: 0.5699)
+  95%_of_max: 80.0% patches (Acc: 0.5944)
   98%_of_max: 90.0% patches (Acc: 0.6245)
   99%_of_max: 90.0% patches (Acc: 0.6245)
 
-Most Efficient Point: 10.0% (Efficiency Ratio: 6.25)
+Most Efficient Point: 10.0% (Efficiency Ratio: 7.00)
 
 ================================================================================
 USE CASE RECOMMENDATIONS
 ================================================================================
 
 Real-time (Latency Critical)   ->  30.0% patches (Accuracy: 0.5236, Speedup: 3.3x)
-Balanced (Mobile/Edge)         ->  50.0% patches (Accuracy: 0.5832, Speedup: 2.0x)
+Balanced (Mobile/Edge)         ->  40.0% patches (Accuracy: 0.5516, Speedup: 2.5x)
 High Accuracy (Server)         ->  70.0% patches (Accuracy: 0.5918, Speedup: 1.4x)
 Maximum Accuracy               -> 100.0% patches (Accuracy: 0.6064, Speedup: 1.0x)

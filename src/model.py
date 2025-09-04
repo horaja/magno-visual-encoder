@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import timm
+import numpy as np
 
 class PatchImportanceScorer(nn.Module):
     """
@@ -47,7 +48,7 @@ class FlexiblePatchSelector(nn.Module):
     Flexible patch selector supporting multiple selection strategies:
     - 'top_k': Select top-k patches based on scores
     - 'random': Randomly select patches
-    - 'probabilistic': Sample patches based on score distribution
+    - 'spatial_threshold': Spatially-biased threshold selection (replacing probabilistic)
     - 'threshold': Select patches above a threshold
     """
     def __init__(self, patch_percentage, selection_strategy='top_k'):
@@ -61,8 +62,75 @@ class FlexiblePatchSelector(nn.Module):
             raise ValueError("patch_percentage must be between 0 and 1.")
         self.patch_percentage = patch_percentage
         self.selection_strategy = selection_strategy
+        
+        # Parameters for spatial threshold strategy
+        self.threshold = 0.3  # Can be made configurable
+        self.gaussian_std = 0.25
+        self.use_center_of_gravity = True
+        self.normalize_scores = True
 
-    def forward(self, magno_patches, vit_positional_embedding, scores=None):
+    def compute_center_of_gravity(self, line_drawing):
+        """
+        Compute the center of gravity (center of mass) of the line drawing.
+        
+        Args:
+            line_drawing (torch.Tensor): Shape (B, 1, H, W)
+        
+        Returns:
+            torch.Tensor: Centers of gravity, shape (B, 2) with (y, x) coordinates normalized to [0, 1]
+        """
+        B, _, H, W = line_drawing.shape
+        
+        # Create coordinate grids
+        y_coords = torch.linspace(0, 1, H, device=line_drawing.device).view(1, 1, H, 1)
+        x_coords = torch.linspace(0, 1, W, device=line_drawing.device).view(1, 1, 1, W)
+        
+        # Compute center of gravity for each image in batch
+        total_mass = line_drawing.sum(dim=(2, 3), keepdim=True) + 1e-6  # Avoid division by zero
+        
+        cog_y = (line_drawing * y_coords).sum(dim=(2, 3)).squeeze(-1) / total_mass.squeeze()
+        cog_x = (line_drawing * x_coords).sum(dim=(2, 3)).squeeze(-1) / total_mass.squeeze()
+        
+        return torch.stack([cog_y, cog_x], dim=1)
+    
+    def create_gaussian_weights(self, num_patches_h, num_patches_w, centers, device):
+        """
+        Create 2D Gaussian weights for spatial biasing.
+        
+        Args:
+            num_patches_h (int): Number of patches in height
+            num_patches_w (int): Number of patches in width
+            centers (torch.Tensor): Centers for Gaussian, shape (B, 2)
+            device: Device to create tensor on
+        
+        Returns:
+            torch.Tensor: Gaussian weights, shape (B, num_patches_h * num_patches_w)
+        """
+        B = centers.shape[0]
+        
+        # Create patch coordinate grid (normalized to [0, 1])
+        y_patch = torch.linspace(0, 1, num_patches_h, device=device)
+        x_patch = torch.linspace(0, 1, num_patches_w, device=device)
+        grid_y, grid_x = torch.meshgrid(y_patch, x_patch, indexing='ij')
+        
+        # Flatten grid coordinates
+        grid_coords = torch.stack([grid_y.flatten(), grid_x.flatten()], dim=1)  # (N_patches, 2)
+        
+        # Compute Gaussian weights for each batch item
+        weights = []
+        for b in range(B):
+            center = centers[b].unsqueeze(0)  # (1, 2)
+            
+            # Compute distances from center
+            distances_sq = ((grid_coords - center) ** 2).sum(dim=1)  # (N_patches,)
+            
+            # Apply Gaussian
+            gaussian_weights = torch.exp(-distances_sq / (2 * self.gaussian_std ** 2))
+            weights.append(gaussian_weights)
+        
+        return torch.stack(weights)  # (B, N_patches)
+
+    def forward(self, magno_patches, vit_positional_embedding, scores=None, line_drawing=None):
         """
         Args:
             magno_patches (torch.Tensor): All patches from the Magno image,
@@ -71,6 +139,8 @@ class FlexiblePatchSelector(nn.Module):
                                                      embeddings, shape (1, num_patches + 1, embed_dim).
             scores (torch.Tensor, optional): The density scores from the PatchImportanceScorer,
                                             shape (B, num_patches). Not used for random selection.
+            line_drawing (torch.Tensor, optional): Original line drawing for spatial_threshold,
+                                                   shape (B, 1, H, W).
         
         Returns:
             torch.Tensor: A sparse sequence of selected patch embeddings with their
@@ -90,11 +160,11 @@ class FlexiblePatchSelector(nn.Module):
                 raise ValueError("Scores required for top_k selection")
             _, indices = torch.topk(scores, k=k, dim=1)
             
-        elif self.selection_strategy == 'probabilistic':
-            # Probabilistic sampling based on score distribution
-            if scores is None:
-                raise ValueError("Scores required for probabilistic selection")
-            indices = self._probabilistic_selection(scores, k)
+        elif self.selection_strategy == 'spatial_threshold':
+            # NEW: Spatially-biased threshold selection (replacing probabilistic)
+            if scores is None or line_drawing is None:
+                raise ValueError("Scores and line_drawing required for spatial_threshold selection")
+            indices = self._spatial_threshold_selection(scores, line_drawing, k)
             
         elif self.selection_strategy == 'threshold':
             # Threshold-based selection with top-k fallback
@@ -124,22 +194,71 @@ class FlexiblePatchSelector(nn.Module):
             indices[i] = torch.randperm(num_patches)[:k]
         return indices
 
-    def _probabilistic_selection(self, scores, k):
-        """Sample patches based on score distribution."""
-        B = scores.shape[0]
+    def _spatial_threshold_selection(self, scores, line_drawing, k):
+        """
+        Select patches using spatially-biased threshold method.
         
-        # Convert scores to probabilities using softmax
-        # Add temperature parameter for controlling distribution sharpness
-        temperature = 0.5  # Lower = sharper distribution, higher = more uniform
-        probs = F.softmax(scores / temperature, dim=1)
+        Args:
+            scores (torch.Tensor): Importance scores, shape (B, num_patches)
+            line_drawing (torch.Tensor): Line drawings, shape (B, 1, H, W)
+            k (int): Target number of patches to select
         
-        # Sample k patches without replacement
-        indices = torch.zeros(B, k, dtype=torch.long, device=scores.device)
-        for i in range(B):
-            # Multinomial sampling without replacement
-            indices[i] = torch.multinomial(probs[i], k, replacement=False)
+        Returns:
+            torch.Tensor: Selected indices, shape (B, k)
+        """
+        B, N = scores.shape
+        device = scores.device
         
-        return indices
+        # Calculate patch grid dimensions
+        num_patches_per_side = int(np.sqrt(N))
+        
+        # Step 1: Compute center of gravity
+        if self.use_center_of_gravity:
+            centers = self.compute_center_of_gravity(line_drawing)
+        else:
+            # Use image center
+            centers = torch.tensor([[0.5, 0.5]], device=device).repeat(B, 1)
+        
+        # Step 2: Create Gaussian spatial weights
+        gaussian_weights = self.create_gaussian_weights(
+            num_patches_per_side, num_patches_per_side, centers, device
+        )
+        
+        # Step 3: Combine scores with spatial weights
+        weighted_scores = scores * gaussian_weights
+        
+        # Step 4: Normalize scores if requested
+        if self.normalize_scores:
+            weighted_scores = weighted_scores / (weighted_scores.sum(dim=1, keepdim=True) + 1e-6)
+        
+        # Step 5: Apply threshold selection with fallback to top-k
+        indices_list = []
+        for b in range(B):
+            # Get patches above threshold
+            above_threshold = weighted_scores[b] > self.threshold
+            above_indices = torch.where(above_threshold)[0]
+            
+            if len(above_indices) >= k:
+                # Too many patches above threshold, take top-k
+                _, top_indices = torch.topk(weighted_scores[b], k=k)
+                indices_list.append(top_indices)
+            elif len(above_indices) > 0:
+                # Some but not enough patches above threshold
+                # Take all above threshold + top remaining
+                remaining_k = k - len(above_indices)
+                mask = torch.ones(N, dtype=torch.bool, device=device)
+                mask[above_indices] = False
+                remaining_scores = weighted_scores[b].clone()
+                remaining_scores[~mask] = -float('inf')
+                _, remaining_indices = torch.topk(remaining_scores, k=remaining_k)
+                combined = torch.cat([above_indices, remaining_indices])
+                indices_list.append(combined[:k])
+            else:
+                # No patches above threshold, fall back to top-k
+                _, top_indices = torch.topk(weighted_scores[b], k=k)
+                indices_list.append(top_indices)
+        
+        return torch.stack(indices_list)
 
     def _threshold_selection(self, scores, k):
         """Select patches above adaptive threshold, with top-k fallback."""
@@ -278,10 +397,12 @@ class SelectiveMagnoViT(nn.Module):
         all_patches = self.vit.patch_embed(magno_image)
         
         # Select patches based on strategy
+        # Pass line_drawing for spatial_threshold strategy
         selected_patches = self.selector(
             all_patches,
             self.vit.pos_embed,
-            patch_scores
+            patch_scores,
+            line_drawing if self.selection_strategy == 'spatial_threshold' else None
         )
         
         # Prepare [CLS] token
@@ -327,7 +448,7 @@ class SelectiveMagnoViT(nn.Module):
         self.selection_strategy = strategy
         self.selector.selection_strategy = strategy
         return self
-    
+        
     @torch.no_grad()
     def get_selected_patches_indices(self, line_drawing, patch_percentage=None):
         """Get indices of selected patches for visualization."""
@@ -343,12 +464,12 @@ class SelectiveMagnoViT(nn.Module):
             
             if self.selection_strategy == 'top_k':
                 _, indices = torch.topk(patch_scores, k=k, dim=1)
-            elif self.selection_strategy == 'probabilistic':
-                indices = self.selector._probabilistic_selection(patch_scores, k)
+            elif self.selection_strategy == 'spatial_threshold':
+                indices = self.selector._spatial_threshold_selection(patch_scores, line_drawing, k)
             elif self.selection_strategy == 'threshold':
                 indices = self.selector._threshold_selection(patch_scores, k)
             
-            return indices     
+            return indices 
         
     def get_model_info(self):
         """
