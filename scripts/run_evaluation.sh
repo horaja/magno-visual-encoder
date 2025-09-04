@@ -51,6 +51,7 @@ mkdir -p ${RESULTS_LOGS_DIR}
 
 # Setup environment
 eval "$(mamba shell hook --shell bash)"
+mamba env update -f environment.yml || mamba env create -f environment.yml -y
 mamba activate ${CONDA_ENV_NAME}
 
 # ============================================
@@ -62,7 +63,7 @@ RESULTS_FILE="${RESULTS_LOGS_DIR}/eval_pp${PATCH_PERCENTAGE}_${TIMESTAMP}.txt"
 echo "Running evaluation..."
 python src/evaluate.py \
     --magno_dir "${MAGNO_DATA_DIR}" \
-    --lines_dir "${LINES_DATA_DIR}" \
+    --lines_dir "${LOG_DATA_DIR}" \
     --model_dir "${MODEL_CHECKPOINT_DIR}" \
     --plots_dir "${RESULTS_PLOTS_DIR}" \
     --results_file "${RESULTS_FILE}" \

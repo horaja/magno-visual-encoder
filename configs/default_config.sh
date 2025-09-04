@@ -18,8 +18,8 @@ export LINES_DATA_DIR="${PREPROCESSED_DATA_ROOT}/line_drawings"
 # ============================================
 # MODEL HYPERPARAMETERS
 # ============================================
-export IMG_SIZE=64
-export PATCH_SIZE=4
+export IMG_SIZE=224
+export PATCH_SIZE=16
 export PATCH_PERCENTAGE=0.4
 export NUM_CLASSES=10
 export VIT_MODEL_NAME="vit_tiny_patch16_224.augreg_in21k"
@@ -39,6 +39,12 @@ export NUM_WORKERS=4
 # ============================================
 export LINE_DRAWING_STYLE="opensketch_style"
 export PREPROCESSING_SIZE=64
+
+export LOG_DATA_DIR="${PREPROCESSED_DATA_ROOT}/l_o_g"
+export LOG_PREPROCESSING_SIZE=224
+export LOG_SIGMA=1.0
+export LOG_THRESHOLD=98
+export LOG_METHOD="simplified"  # Method: simplified, zero_cross, or marr_hildreth
 
 # ============================================
 # OUTPUT DIRECTORIES
