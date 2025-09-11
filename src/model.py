@@ -51,15 +51,19 @@ class SpatialThresholdSelector(nn.Module):
     from the line drawing's center of gravity. It selects patches that are
     both dense and centrally located relative to the drawing's content.
     """
-    def __init__(self, patch_percentage):
+    def __init__(self, patch_percentage, non_shape_percentage=0.0):
         """
         Args:
             patch_percentage (float): The target fraction of patches to select.
+            non_shape_percentage (float): Fraction of selected patches that should be random (non-shape-biased).
         """
         super().__init__()
         if not (0 < patch_percentage <= 1.0):
             raise ValueError("patch_percentage must be between 0 and 1.")
+        if not (0 <= non_shape_percentage <= 1.0):  # ADD VALIDATION
+            raise ValueError("non_shape_percentage must be between 0 and 1.")
         self.patch_percentage = patch_percentage
+        self.non_shape_percentage = non_shape_percentage
         
         # Parameters for the spatial threshold strategy
         self.threshold = 0.3
@@ -148,9 +152,49 @@ class SpatialThresholdSelector(nn.Module):
         """
         B, N, D = magno_patches.shape
         k = int(N * self.patch_percentage)
+        
+        k_random = int(k * self.non_shape_percentage)
+        k_shape = k - k_random
+        
+        device = magno_patches.device
+        selected_indices_list = []
 
-        # Get the indices of the selected patches
-        selected_indices = self._get_selection_indices(scores, line_drawing, k)
+        for b in range(B):
+            # Get shape-biased patches
+            if k_shape > 0:
+                shape_indices = self._get_selection_indices(
+                    scores[b:b+1], 
+                    line_drawing[b:b+1], 
+                    k_shape
+                )[0]
+            else:
+                shape_indices = torch.tensor([], dtype=torch.long, device=device)
+            
+            # Get random non-shape patches
+            if k_random > 0:
+                # Get all patch indices
+                all_indices = torch.arange(N, device=device)
+                # Exclude already selected shape-biased patches
+                mask = torch.ones(N, dtype=torch.bool, device=device)
+                mask[shape_indices] = False
+                available_indices = all_indices[mask]
+                
+                # Randomly select from available patches
+                if len(available_indices) >= k_random:
+                    perm = torch.randperm(len(available_indices), device=device)
+                    random_indices = available_indices[perm[:k_random]]
+                else:
+                    # If not enough available, take all available
+                    random_indices = available_indices
+                
+                # Combine shape and random indices
+                combined_indices = torch.cat([shape_indices, random_indices])
+            else:
+                combined_indices = shape_indices
+            
+            selected_indices_list.append(combined_indices)
+        
+        selected_indices = torch.stack(selected_indices_list)
 
         # Gather the selected patches using the indices
         indices_expanded = selected_indices.unsqueeze(-1).expand(-1, -1, D)
@@ -181,6 +225,7 @@ class SelectiveMagnoViT(nn.Module):
     
     def __init__(self, 
                  patch_percentage=0.25,
+                 non_shape_percentage=0.0,
                  num_classes=10,
                  img_size=64,
                  patch_size=4,
@@ -196,6 +241,7 @@ class SelectiveMagnoViT(nn.Module):
         
         # Store configuration
         self.patch_percentage = patch_percentage
+        self.non_shape_percentage = non_shape_percentage 
         self.num_classes = num_classes
         self.img_size = img_size
         self.patch_size = patch_size
@@ -227,7 +273,9 @@ class SelectiveMagnoViT(nn.Module):
         
         # Initialize custom modules
         self.scorer = PatchImportanceScorer(patch_size=patch_size)
-        self.selector = SpatialThresholdSelector(patch_percentage=patch_percentage)
+        self.selector = SpatialThresholdSelector(
+            patch_percentage=patch_percentage,
+            non_shape_percentage=non_shape_percentage)
         
         # Store metadata
         self.num_patches = num_patches

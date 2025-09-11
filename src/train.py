@@ -260,6 +260,7 @@ def main(args):
     
     model = SelectiveMagnoViT(
         patch_percentage=args.patch_percentage,
+        non_shape_percentage=args.non_shape_percentage,
         num_classes=num_classes,
         img_size=args.img_size,
         patch_size=args.patch_size,
@@ -274,6 +275,7 @@ def main(args):
         'weight_decay': args.weight_decay,
         'patience': args.patience,
         'patch_percentage': args.patch_percentage,
+        'non_shape_percentage': args.non_shape_percentage,
         'img_size': args.img_size,
         'patch_size': args.patch_size,
         'vit_model_name': args.vit_model_name,
@@ -307,6 +309,8 @@ if __name__ == '__main__':
     
     # Model parameters
     parser.add_argument('--patch_percentage', type=float, default=0.3)
+    parser.add_argument('--non_shape_percentage', type=float, default=0.0,
+                       help='Fraction of selected patches that should be random (non-shape-biased)')
     parser.add_argument('--img_size', type=int, default=64)
     parser.add_argument('--patch_size', type=int, default=4)
     parser.add_argument('--vit_model_name', type=str, 

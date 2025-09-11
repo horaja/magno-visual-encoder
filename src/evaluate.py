@@ -360,6 +360,7 @@ def main(args):
     num_classes = len(val_dataset.class_names)
     model = SelectiveMagnoViT(
         patch_percentage=args.patch_percentage,
+        non_shape_percentage=args.non_shape_percentage,
         num_classes=num_classes,
         img_size=args.img_size,
         patch_size=args.patch_size
@@ -414,6 +415,7 @@ def main(args):
     config = {
         'model_path': model_path,
         'patch_percentage': args.patch_percentage,
+        'non_shape_percentage': args.non_shape_percentage,
         'img_size': args.img_size,
         'patch_size': args.patch_size,
         'num_classes': num_classes
@@ -438,6 +440,7 @@ if __name__ == '__main__':
     
     # Model parameters
     parser.add_argument('--patch_percentage', type=float, default=0.3)
+    parser.add_argument('--non_shape_percentage', type=float, default=0.0)
     parser.add_argument('--img_size', type=int, default=64)
     parser.add_argument('--patch_size', type=int, default=4)
     
