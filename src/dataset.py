@@ -13,7 +13,7 @@ class ImageNetteDataset(Dataset):
     preprocessed images, extracts class labels from the folder names, and
     applies the necessary transformations.
     """
-    def __init__(self, magno_root, lines_root, split='train', transform=None):
+    def __init__(self, color_root, lines_root, split='train', transform=None):
         """
         Args:
             magno_root (str): Root directory for the Magno images (e.g., '.../data/preprocessed/magno_images').
@@ -21,7 +21,7 @@ class ImageNetteDataset(Dataset):
             split (str): The dataset split to load ('train' or 'val').
             transform (callable, optional): A torchvision transforms pipeline to be applied to the images.
         """
-        self.magno_root = os.path.join(magno_root, split)
+        self.color_root = os.path.join(color_root, split)
         self.lines_root = os.path.join(lines_root, split)
         self.split = split
         self.transform = transform
@@ -64,10 +64,11 @@ class ImageNetteDataset(Dataset):
         # --- 2. Construct the Corresponding Magno Image Path ---
         # Assumes filenames are consistent: ..._line.png -> ..._magno.png
         relative_path = os.path.relpath(line_path, self.lines_root)
-        base_name = os.path.basename(line_path).replace('_line.png', '_magno.png')
-        magno_path = os.path.join(self.magno_root, os.path.dirname(relative_path), base_name)
+        # Assumes consistent naming: ..._line.png -> ..._color.png
+        base_name = os.path.basename(line_path).replace('_line.png', '_color.png')
+        color_path = os.path.join(self.color_root, os.path.dirname(relative_path), base_name)
         
-        magno_image = Image.open(magno_path).convert('RGB') # Load as 3-channel for ViT
+        color_image = Image.open(color_path).convert('RGB')
 
         # --- 3. Extract the Label ---
         class_name = os.path.basename(os.path.dirname(line_path))
@@ -75,13 +76,13 @@ class ImageNetteDataset(Dataset):
 
         # --- 4. Apply Transformations ---
         if self.transform:
-            magno_image = self.transform(magno_image)
-            # Apply a simple ToTensor for the line drawing
-            line_drawing = transforms.ToTensor()(line_drawing)
-            line_drawing = 1.0 - line_drawing
+            color_image = self.transform(color_image)
+        
+        line_drawing = transforms.ToTensor()(line_drawing)
+        line_drawing = 1.0 - line_drawing
 
         sample = {
-            'magno_image': magno_image,
+            'color_image': color_image, # Corrected key
             'line_drawing': line_drawing,
             'label': torch.tensor(label, dtype=torch.long)
         }

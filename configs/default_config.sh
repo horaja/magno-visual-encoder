@@ -12,13 +12,14 @@ export EXPERIMENT_VERSION="v1.0"
 # ============================================
 export RAW_DATA_ROOT="data/raw_dataset"
 export PREPROCESSED_DATA_ROOT="data/preprocessed"
-export MAGNO_DATA_DIR="${PREPROCESSED_DATA_ROOT}/magno_images"
+export COLOR_DATA_DIR="${PREPROCESSED_DATA_ROOT}/color_images"
 export LINES_DATA_DIR="${PREPROCESSED_DATA_ROOT}/line_drawings"
 
 # ============================================
 # MODEL HYPERPARAMETERS
 # ============================================
-export IMG_SIZE=256
+export IMG_SIZE=256       # For the color image
+export LD_IMG_SIZE=64     # For the line drawing
 export PATCH_SIZE=16
 export PATCH_PERCENTAGE=0.4
 export NUM_CLASSES=10

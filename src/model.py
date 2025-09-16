@@ -233,7 +233,7 @@ class SelectiveMagnoViT(nn.Module):
         self.num_patches = num_patches
         self.embed_dim = embed_dim
     
-    def forward(self, magno_image, line_drawing):
+    def forward(self, color_image, line_drawing):
         """
         Forward pass through the model.
         
@@ -244,57 +244,74 @@ class SelectiveMagnoViT(nn.Module):
         Returns:
             torch.Tensor: Classification logits (B, num_classes).
         """
-        # Score patches based on line drawing
-        patch_scores = self.scorer(line_drawing)
         
-        # Extract all patches from Magno image
-        all_patches = self.vit.patch_embed(magno_image)
+        # Upsample line drawing to match image size if needed
+        line_drawing_upsampled = F.interpolate(
+            line_drawing, 
+            size=(self.img_size, self.img_size), 
+            mode='bilinear', 
+            align_corners=False
+        )
+
+        # Score patches based on the upsampled line drawing
+        patch_scores = self.scorer(line_drawing_upsampled)
         
-        # Select patches using spatial threshold method with positional embeddings
+        # Extract all patches from the COLOR image
+        all_patches = self.vit.patch_embed(color_image)
+        
+        # Select patches using the spatial threshold method
         selected_patches = self.selector(
             all_patches,
             self.vit.pos_embed,
             patch_scores,
-            line_drawing
+            line_drawing_upsampled
         )
         
         # Prepare [CLS] token
         cls_token_with_pos = self.vit.cls_token + self.vit.pos_embed[:, :1, :]
-        
-        # Combine [CLS] token with selected patches
-        batch_size = magno_image.shape[0]
+        batch_size = color_image.shape[0]
         full_sequence = torch.cat([
             cls_token_with_pos.expand(batch_size, -1, -1),
             selected_patches
         ], dim=1)
-        
-        # Apply dropout
         full_sequence = self.vit.pos_drop(full_sequence)
-        
-        # Process through transformer blocks
         x = self.vit.blocks(full_sequence)
         x = self.vit.norm(x)
-        
-        # Extract [CLS] token output
         cls_output = x[:, 0]
-        
-        # Final classification
         logits = self.vit.head(cls_output)
-        
         return logits
     
     @torch.no_grad()
-    def get_selected_patches_indices(self, line_drawing):
+    def get_selected_indices(self, line_drawing):
         """
-        Get indices of selected patches for visualization.
-        
+        Returns the indices of the patches that would be selected for a given line drawing.
+        This is a standalone method for visualization and analysis.
+
         Args:
-            line_drawing (torch.Tensor): Line drawing (B, 1, H, W).
-        
+            line_drawing (torch.Tensor): A batch of low-resolution line drawings (B, 1, h, w).
+
         Returns:
-            torch.Tensor: Indices of selected patches (B, k).
+            torch.Tensor: The indices of the selected patches (B, k).
         """
-        patch_scores = self.scorer(line_drawing)
-        k = int(patch_scores.shape[1] * self.patch_percentage)
-        _, indices = torch.topk(patch_scores, k=k, dim=1)
-        return indices
+        self.eval() # Ensure model is in eval mode
+
+        # Upsample the line drawing to the model's expected image size
+        line_drawing_upsampled = F.interpolate(
+            line_drawing,
+            size=(self.img_size, self.img_size),
+            mode='bilinear',
+            align_corners=False
+        )
+        
+        # Score the patches based on the upsampled line drawing
+        patch_scores = self.scorer(line_drawing_upsampled)
+        
+        # Determine the number of patches to select (k)
+        B, N = patch_scores.shape
+        k = int(N * self.patch_percentage)
+        
+        # Use the selector's internal logic to get the final indices
+        # Note: This mirrors the logic in the SpatialThresholdSelector
+        selected_indices = self.selector._get_selection_indices(patch_scores, line_drawing_upsampled, k)
+        
+        return selected_indices

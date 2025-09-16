@@ -59,12 +59,12 @@ class Trainer:
         
         progress_bar = tqdm(self.train_loader, desc=f"Epoch {self.epoch+1} [Train]")
         for batch in progress_bar:
-            magno_images = batch['magno_image'].to(self.device)
+            color_images = batch['color_image'].to(self.device)
             line_drawings = batch['line_drawing'].to(self.device)
             labels = batch['label'].to(self.device)
             
             self.optimizer.zero_grad()
-            outputs = self.model(magno_images, line_drawings)
+            outputs = self.model(color_images, line_drawings)
             loss = self.criterion(outputs, labels)
             loss.backward()
             self.optimizer.step()
@@ -224,14 +224,14 @@ def main(args):
     # Load datasets
     print("Loading datasets...")
     train_dataset = ImageNetteDataset(
-        magno_root=args.magno_dir,
+        magno_root=args.color_dir,
         lines_root=args.lines_dir,
         split='train',
         transform=train_transform
     )
     
     val_dataset = ImageNetteDataset(
-        magno_root=args.magno_dir,
+        magno_root=args.color_dir,
         lines_root=args.lines_dir,
         split='val',
         transform=val_transform
@@ -300,7 +300,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train SelectiveMagnoViT model")
     
     # Data paths
-    parser.add_argument('--magno_dir', type=str, required=True)
+    parser.add_argument('--color_dir', type=str, required=True)
     parser.add_argument('--lines_dir', type=str, required=True)
     parser.add_argument('--output_dir', type=str, required=True)
     parser.add_argument('--tensorboard_dir', type=str, default=None)

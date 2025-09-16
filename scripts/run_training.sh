@@ -74,7 +74,7 @@ echo "=========================================="
 echo "Experiment: ${EXPERIMENT_NAME} ${EXPERIMENT_VERSION}"
 echo ""
 echo "DATA CONFIGURATION:"
-echo "  Magno Dir: ${MAGNO_DATA_DIR}"
+echo "  Color Dir: ${COLOR_DATA_DIR}"
 echo "  Lines Dir: ${LINES_DATA_DIR}"
 echo "  Image Size: ${IMG_SIZE}x${IMG_SIZE}"
 echo ""
@@ -122,7 +122,7 @@ echo "=========================================="
 echo ""
 echo "Starting training..."
 python src/train.py \
-    --magno_dir "${MAGNO_DATA_DIR}" \
+    --color_dir "${COLOR_DATA_DIR}" \
     --lines_dir "${LINES_DATA_DIR}" \
     --output_dir "${MODEL_CHECKPOINT_DIR}" \
     --tensorboard_dir "${TENSORBOARD_LOG_DIR}" \

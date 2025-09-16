@@ -61,7 +61,7 @@ RESULTS_FILE="${RESULTS_LOGS_DIR}/eval_pp${PATCH_PERCENTAGE}_${TIMESTAMP}.txt"
 
 echo "Running evaluation..."
 python src/evaluate.py \
-    --magno_dir "${MAGNO_DATA_DIR}" \
+    --color_dir "${COLOR_DATA_DIR}" \
     --lines_dir "${LINES_DATA_DIR}" \
     --model_dir "${MODEL_CHECKPOINT_DIR}" \
     --plots_dir "${RESULTS_PLOTS_DIR}" \
