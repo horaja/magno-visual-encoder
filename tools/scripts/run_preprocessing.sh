@@ -44,9 +44,9 @@ for SPLIT in train val; do
     
     python test_magno.py \
         --name "${LINE_DRAWING_STYLE}" \
-        --dataroot "${RAW_DATA_ROOT}/${SPLIT}/" \
-        --magno_output_dir "${MAGNO_DATA_DIR}/${SPLIT}/" \
-        --line_drawing_output_dir "${LINES_DATA_DIR}/${SPLIT}/" \
+        --dataroot "${PROJECT_ROOT}/${RAW_DATA_ROOT}/${SPLIT}/" \
+        --magno_output_dir "${PROJECT_ROOT}/${MAGNO_DATA_DIR}/${SPLIT}/" \
+        --line_drawing_output_dir "${PROJECT_ROOT}/${LINES_DATA_DIR}/${SPLIT}/" \
         --size ${PREPROCESSING_SIZE}
     
     echo "Completed ${SPLIT} split"

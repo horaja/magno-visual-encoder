@@ -18,8 +18,8 @@ export LINES_DATA_DIR="${PREPROCESSED_DATA_ROOT}/line_drawings"
 # ============================================
 # MODEL HYPERPARAMETERS
 # ============================================
-export IMG_SIZE=64
-export PATCH_SIZE=4
+export IMG_SIZE=256
+export PATCH_SIZE=16
 export PATCH_PERCENTAGE=0.4
 export NUM_CLASSES=10
 export VIT_MODEL_NAME="vit_tiny_patch16_224.augreg_in21k"
@@ -37,8 +37,8 @@ export NUM_WORKERS=4
 # ============================================
 # PREPROCESSING SETTINGS
 # ============================================
-export LINE_DRAWING_STYLE="opensketch_style"
-export PREPROCESSING_SIZE=64
+export LINE_DRAWING_STYLE="contour_style"
+export PREPROCESSING_SIZE=256
 
 # ============================================
 # OUTPUT DIRECTORIES
