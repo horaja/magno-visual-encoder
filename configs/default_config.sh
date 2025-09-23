@@ -38,7 +38,7 @@ export NUM_WORKERS=4
 # ============================================
 # PREPROCESSING SETTINGS
 # ============================================
-export LINE_DRAWING_STYLE="contour_style"
+export LINE_DRAWING_STYLE="opensketch_style"
 export PREPROCESSING_SIZE=64
 export COLOR_SIZE=256
 
