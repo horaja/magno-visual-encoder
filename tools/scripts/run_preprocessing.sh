@@ -25,7 +25,9 @@ echo "Configuration:"
 echo "  Raw Data: ${RAW_DATA_ROOT}"
 echo "  Output Magno: ${MAGNO_DATA_DIR}"
 echo "  Output Lines: ${LINES_DATA_DIR}"
-echo "  Processing Size: ${PREPROCESSING_SIZE}"
+echo "  Output Color: ${COLOR_DATA_DIR}"
+echo "  Magno Processing Size: ${PREPROCESSING_SIZE}"
+echo "  Color Proecessing Size: ${COLOR_SIZE}"
 echo "  Style: ${LINE_DRAWING_STYLE}"
 echo "=========================================="
 
@@ -47,7 +49,9 @@ for SPLIT in train val; do
         --dataroot "${PROJECT_ROOT}/${RAW_DATA_ROOT}/${SPLIT}/" \
         --magno_output_dir "${PROJECT_ROOT}/${MAGNO_DATA_DIR}/${SPLIT}/" \
         --line_drawing_output_dir "${PROJECT_ROOT}/${LINES_DATA_DIR}/${SPLIT}/" \
-        --size ${PREPROCESSING_SIZE}
+	--color_output_dir "${PROJECT_ROOT}/${LINES_DATA_DIR}/${SPLIT}/"
+        --magno_size ${PREPROCESSING_SIZE}
+	--color_size ${COLOR_SIZE}
     
     echo "Completed ${SPLIT} split"
 done

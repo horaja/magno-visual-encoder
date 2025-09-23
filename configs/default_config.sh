@@ -14,12 +14,13 @@ export RAW_DATA_ROOT="data/raw_dataset"
 export PREPROCESSED_DATA_ROOT="data/preprocessed"
 export MAGNO_DATA_DIR="${PREPROCESSED_DATA_ROOT}/magno_images"
 export LINES_DATA_DIR="${PREPROCESSED_DATA_ROOT}/line_drawings"
+export COLOR_DATA_DIR="${PREPROCESSED_DATA_ROOT}/color_images"
 
 # ============================================
 # MODEL HYPERPARAMETERS
 # ============================================
-export IMG_SIZE=256
-export PATCH_SIZE=16
+export IMG_SIZE=64
+export PATCH_SIZE=4
 export PATCH_PERCENTAGE=0.4
 export NUM_CLASSES=10
 export VIT_MODEL_NAME="vit_tiny_patch16_224.augreg_in21k"
@@ -38,7 +39,8 @@ export NUM_WORKERS=4
 # PREPROCESSING SETTINGS
 # ============================================
 export LINE_DRAWING_STYLE="contour_style"
-export PREPROCESSING_SIZE=256
+export PREPROCESSING_SIZE=64
+export COLOR_SIZE=256
 
 # ============================================
 # OUTPUT DIRECTORIES
